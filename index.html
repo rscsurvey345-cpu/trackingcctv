@@ -187,6 +187,10 @@
       border-radius: 6px;
       cursor: pointer;
       border: 1px solid #e2e8f0;
+      transition: transform 0.2s;
+    }
+    .thumb-img:hover {
+      transform: scale(1.1);
     }
 
     .empty-state {
@@ -200,7 +204,6 @@
       margin-bottom: 1rem;
     }
 
-    /* Custom Checkbox Cards */
     .checkbox-card {
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -242,13 +245,13 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a>
+            <a class="nav-link active" id="navDash" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" onclick="switchTab('record')"><i class="fa-solid fa-pen-to-square me-1"></i> บันทึกสถานการณ์</a>
+            <a class="nav-link" id="navRecord" onclick="switchTab('record')"><i class="fa-solid fa-pen-to-square me-1"></i> บันทึกสถานการณ์</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" onclick="switchTab('table')"><i class="fa-solid fa-table me-1"></i> ตารางข้อมูล</a>
+            <a class="nav-link" id="navTable" onclick="switchTab('table')"><i class="fa-solid fa-table me-1"></i> ตารางข้อมูล</a>
           </li>
         </ul>
       </div>
@@ -273,7 +276,7 @@
       </div>
 
       <!-- Dashboard Filters -->
-      <div class="card-mint p-3">
+      <div class="card-mint p-3 mb-3">
         <div class="row g-2">
           <div class="col-md-3">
             <label class="form-label small fw-bold">รูปแบบสรุป</label>
@@ -467,7 +470,7 @@
                   <div class="col-6 col-md-4">
                     <div class="checkbox-card d-flex align-items-center">
                       <input type="checkbox" id="stWaitingCane" class="me-2" onchange="handleStatusChange('waitingCane')">
-                      <label for="stWaitingCane" class="mb-0 text-danger fw-bold" style="color: #f97316 !important;"><i class="fa-solid fa-wheat-awn me-1"></i> หยุดรออ้อย</label>
+                      <label for="stWaitingCane" class="mb-0 fw-bold" style="color: #f97316 !important;"><i class="fa-solid fa-wheat-awn me-1"></i> หยุดรออ้อย</label>
                     </div>
                   </div>
                   <div class="col-6 col-md-4">
@@ -584,9 +587,9 @@
                 <th style="width: 170px;">สถานี</th>
                 <th style="width: 130px;">ช่วงเวลา</th>
                 <th>สถานการณ์</th>
-                <th class="text-center" style="width: 70px;">รูปตาชั่ง</th>
-                <th class="text-center" style="width: 70px;">รูปเครน</th>
-                <th class="text-center" style="width: 100px;">จัดการ</th>
+                <th class="text-center" style="width: 80px;">รูปตาชั่ง</th>
+                <th class="text-center" style="width: 80px;">รูปเครน</th>
+                <th class="text-center" style="width: 110px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="tblBody">
@@ -595,7 +598,7 @@
         </div>
 
         <!-- Pagination Controls -->
-        <div class="d-flex justify-content-between align-middle mt-3 flex-wrap gap-2">
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
           <div class="d-flex align-items-center gap-2">
             <span class="small text-muted">แสดง</span>
             <select class="form-select form-select-sm" id="tblPageSize" style="width: 70px;" onchange="changePageSize()">
@@ -669,7 +672,7 @@
 
   <!-- JAVASCRIPT APPLICATION LOGIC -->
   <script>
-    // System Constants
+    // System Constants & Config
     const ALLOW_NORMAL_WITH_OTHER_STATUS = false;
     
     const CONFIG_STATIONS = [
@@ -692,12 +695,75 @@
       "16:00 - 17:00 น.", "17:00 - 18:00 น.", "18:00 - 19:00 น.", "19:00 - 20:00 น."
     ];
 
-    // Mock Backend Runner for Standalone/Preview Environment Mode
+    // Status mapping for visual styling & chart colors
+    const STATUS_MAP = {
+      normal: { name: "ปกติ", class: "bg-normal", textClass: "text-success", color: "#10b981", icon: "fa-circle-check" },
+      waitingTruck: { name: "หยุดรอรถ", class: "bg-truck", textClass: "text-warning", color: "#f59e0b", icon: "fa-truck-front" },
+      waitingCane: { name: "หยุดรออ้อย", class: "bg-cane", textClass: "text-danger", color: "#f97316", icon: "fa-wheat-awn" },
+      unknown: { name: "หยุดไม่ทราบสาเหตุ", class: "bg-unknown", textClass: "text-danger", color: "#ef4444", icon: "fa-circle-question" },
+      offline: { name: "Offline", class: "bg-offline", textClass: "text-secondary", color: "#6b7280", icon: "fa-wifi" },
+      craneClosed: { name: "ปิดเครน", class: "bg-crane", textClass: "text-dark", color: "#4b5563", icon: "fa-power-off" }
+    };
+
+    // Application Global State
+    let appData = [];
+    let activeTab = 'dashboard';
+    let currentPage = 1;
+    let pageSize = 25;
+    let pendingDuplicateRecord = null;
+    let activeImageModal = { recordId: null, imageType: null };
+
+    // Chart instances
+    let chartPieInstance = null;
+    let chartLineInstance = null;
+    let chartBarInstance = null;
+
+    // Form Temporary Base64 Storage
+    let formScaleBase64 = "";
+    let formCraneBase64 = "";
+
+    // Mock Backend Runner for Standalone / Preview Environment Mode
+    function generateSampleRecords() {
+      const sampleList = [];
+      const today = new Date().toISOString().split('T')[0];
+      const statuses = Object.keys(STATUS_MAP);
+
+      for (let i = 0; i < 35; i++) {
+        const randomStation = CONFIG_STATIONS[Math.floor(Math.random() * CONFIG_STATIONS.length)];
+        const randomTime = CONFIG_TIME_SLOTS[Math.floor(Math.random() * CONFIG_TIME_SLOTS.length)];
+        
+        // Pick 1 or 2 statuses
+        const numStatuses = Math.random() > 0.8 ? 2 : 1;
+        const selectedStatuses = {};
+        if (numStatuses === 1) {
+          const st = statuses[Math.floor(Math.random() * statuses.length)];
+          selectedStatuses[st] = true;
+        } else {
+          selectedStatuses['waitingTruck'] = true;
+          selectedStatuses['waitingCane'] = true;
+        }
+
+        sampleList.push({
+          id: 'rec_' + (1000 + i),
+          dateIso: today,
+          dateStr: formatIsoToThaiDate(today),
+          station: randomStation,
+          timeSlot: randomTime,
+          status: selectedStatuses,
+          scaleImgUrl: (i % 3 === 0) ? 'https://picsum.photos/400/300?random=' + (i * 2) : '',
+          craneImgUrl: (i % 2 === 0) ? 'https://picsum.photos/400/300?random=' + (i * 2 + 1) : '',
+          createdAt: new Date().toISOString()
+        });
+      }
+      return sampleList;
+    }
+
+    const sampleMockRecords = generateSampleRecords();
+
+    // Check Google Apps Script Environment Fallback
     if (typeof google === 'undefined' || !google.script || !google.script.run) {
       window.google = window.google || {};
       window.google.script = window.google.script || {};
-      
-      const sampleMockRecords = generateSampleRecords();
 
       window.google.script.run = {
         withSuccessHandler: function(callback) {
@@ -777,257 +843,424 @@
               if (type === 'scale') rec.scaleImgUrl = base64;
               else rec.craneImgUrl = base64;
             }
-            if (this._success) this._success({ success: true, message: "อัปโหลดรูปภาพใหม่สำเร็จ", url: base64 });
-          }, 400);
+            if (this._success) this._success({ success: true, message: "อัปเดตรูปภาพเรียบร้อยแล้ว" });
+          }, 300);
         }
       };
     }
 
-    function generateSampleRecords() {
-      const records = [];
-      const today = new Date();
-      
-      for (let i = 0; i < 20; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - (i % 5));
-        const iso = d.toISOString().split("T")[0];
-        const yr = d.getFullYear() + 543;
-        const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${yr}`;
-        
-        const st = CONFIG_STATIONS[i % CONFIG_STATIONS.length];
-        const ts = CONFIG_TIME_SLOTS[i % CONFIG_TIME_SLOTS.length];
-        
-        const typeRand = i % 5;
-        const status = {
-          normal: typeRand === 0,
-          waitingTruck: typeRand === 1,
-          waitingCane: typeRand === 2,
-          unknown: typeRand === 3,
-          offline: typeRand === 4,
-          craneClosed: false
-        };
-
-        records.push({
-          id: 'demo_' + (i + 1),
-          dateStr: dateStr,
-          dateIso: iso,
-          timeSlot: ts,
-          station: st,
-          status: status,
-          scaleImgUrl: 'https://picsum.photos/200/200?random=' + (i*2 + 1),
-          craneImgUrl: 'https://picsum.photos/200/200?random=' + (i*2 + 2),
-          createdAt: new Date().toISOString()
-        });
-      }
-      return records;
-    }
-
-    // Global Application State
-    let masterRecords = [];
-    let masterStations = [];
-    let masterTimeSlots = [];
-    
-    // Pagination State
-    let currentPage = 1;
-    let pageSize = 25;
-    let filteredRecords = [];
-
-    // Form Temporary Stores
-    let tempScaleBase64 = null;
-    let tempCraneBase64 = null;
-    let pendingPayload = null;
-
-    // Image Viewer Modal Context
-    let currentImageContext = { recordId: null, imageType: null };
-
-    // Chart Instances
-    let chartPieInstance = null;
-    let chartLineInstance = null;
-    let chartBarInstance = null;
-
-    // Application Lifecycle Initialization
-    document.addEventListener("DOMContentLoaded", () => {
-      const todayIso = new Date().toISOString().split("T")[0];
-      document.getElementById("formDateIso").value = todayIso;
-      handleDateChange();
-
+    // Document ready initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      initDropdowns();
+      setDefaultFormDate();
       loadAllData();
     });
 
-    // SPA Navigation Tab Switching
-    function switchTab(tabName) {
-      document.getElementById("pageDashboard").classList.add("d-none");
-      document.getElementById("pageRecord").classList.add("d-none");
-      document.getElementById("pageTable").classList.add("d-none");
+    function initDropdowns() {
+      // Station Dropdowns
+      const stationSelects = ['dashFilterStation', 'formStation', 'tblFilterStation'];
+      stationSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const currentVal = el.value;
+        // Keep first option
+        const firstOpt = el.options[0];
+        el.innerHTML = '';
+        el.appendChild(firstOpt);
 
-      const navLinks = document.querySelectorAll(".nav-link");
-      navLinks.forEach(el => el.classList.remove("active"));
+        CONFIG_STATIONS.forEach(st => {
+          const opt = document.createElement('option');
+          opt.value = st;
+          opt.textContent = st;
+          el.appendChild(opt);
+        });
+        el.value = currentVal;
+      });
+
+      // Time Slot Dropdowns
+      const timeSelects = ['dashFilterTime', 'formTimeSlot', 'tblFilterTime'];
+      timeSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const currentVal = el.value;
+        const firstOpt = el.options[0];
+        el.innerHTML = '';
+        el.appendChild(firstOpt);
+
+        CONFIG_TIME_SLOTS.forEach(ts => {
+          const opt = document.createElement('option');
+          opt.value = ts;
+          opt.textContent = ts;
+          el.appendChild(opt);
+        });
+        el.value = currentVal;
+      });
+    }
+
+    function switchTab(tabName) {
+      activeTab = tabName;
+      document.getElementById('pageDashboard').classList.toggle('d-none', tabName !== 'dashboard');
+      document.getElementById('pageRecord').classList.toggle('d-none', tabName !== 'record');
+      document.getElementById('pageTable').classList.toggle('d-none', tabName !== 'table');
+
+      document.getElementById('navDash').classList.toggle('active', tabName === 'dashboard');
+      document.getElementById('navRecord').classList.toggle('active', tabName === 'record');
+      document.getElementById('navTable').classList.toggle('active', tabName === 'table');
 
       if (tabName === 'dashboard') {
-        document.getElementById("pageDashboard").classList.remove("d-none");
-        navLinks[0].classList.add("active");
         renderDashboard();
-      } else if (tabName === 'record') {
-        document.getElementById("pageRecord").classList.remove("d-none");
-        navLinks[1].classList.add("active");
       } else if (tabName === 'table') {
-        document.getElementById("pageTable").classList.remove("d-none");
-        navLinks[2].classList.add("active");
         filterAndRenderTable();
       }
     }
 
-    // UI Loading Controller
-    function showLoading(msg = "กำลังโหลดข้อมูล...") {
-      document.getElementById("loadingText").innerText = msg;
-      document.getElementById("loadingOverlay").classList.remove("d-none");
+    function showLoading(msg = 'กำลังโหลดข้อมูล...') {
+      document.getElementById('loadingText').textContent = msg;
+      document.getElementById('loadingOverlay').classList.remove('d-none');
     }
 
     function hideLoading() {
-      document.getElementById("loadingOverlay").classList.add("d-none");
+      document.getElementById('loadingOverlay').classList.add('d-none');
     }
 
-    // Toast Notification System
     function showToast(message, type = 'success') {
-      const container = document.getElementById("toastContainer");
-      const toastId = 'toast_' + Date.now();
-      const bgClass = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : 'bg-warning');
-      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-
-      const toastHtml = `
-        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0 show" role="alert">
-          <div class="d-flex">
-            <div class="toast-body">
-              <i class="fa-solid ${icon} me-2"></i>${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-          </div>
+      const container = document.getElementById('toastContainer');
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
+      toastEl.setAttribute('role', 'alert');
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
       `;
-      container.insertAdjacentHTML('beforeend', toastHtml);
+      container.appendChild(toastEl);
       setTimeout(() => {
-        const elem = document.getElementById(toastId);
-        if (elem) elem.remove();
+        toastEl.remove();
       }, 4000);
     }
 
-    // Fetch Master Data
     function loadAllData() {
-      showLoading("กำลังโหลดข้อมูลจากระบบ...");
+      showLoading('กำลังโหลดข้อมูลระบบ...');
       google.script.run
         .withSuccessHandler(response => {
           hideLoading();
-          if (response.success) {
-            masterRecords = response.records || [];
-            masterStations = response.config.stations || CONFIG_STATIONS;
-            masterTimeSlots = response.config.timeSlots || CONFIG_TIME_SLOTS;
-
-            populateDropdowns();
-            renderDashboard();
-            filterAndRenderTable();
+          if (response && response.success) {
+            appData = response.records || [];
+            if (activeTab === 'dashboard') renderDashboard();
+            else if (activeTab === 'table') filterAndRenderTable();
           } else {
-            showToast("เกิดข้อผิดพลาด: " + response.message, 'error');
+            showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
           }
         })
         .withFailureHandler(err => {
           hideLoading();
-          showToast("การเชื่อมต่อล้มเหลว: " + err.toString(), 'error');
+          showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + err.message, 'error');
         })
         .getDashboardData();
     }
 
-    // Populate Dynamic Select Elements
-    function populateDropdowns() {
-      const formStation = document.getElementById("formStation");
-      formStation.innerHTML = '<option value="">-- เลือกสถานีขนถ่าย --</option>';
-      masterStations.forEach(st => formStation.add(new Option(st, st)));
-
-      const formTime = document.getElementById("formTimeSlot");
-      formTime.innerHTML = '<option value="">-- เลือกช่วงเวลา --</option>';
-      masterTimeSlots.forEach(ts => formTime.add(new Option(ts, ts)));
-
-      const dashStation = document.getElementById("dashFilterStation");
-      dashStation.innerHTML = '<option value="">ทุกสถานี (43 สถานี)</option>';
-      masterStations.forEach(st => dashStation.add(new Option(st, st)));
-
-      const dashTime = document.getElementById("dashFilterTime");
-      dashTime.innerHTML = '<option value="">ทั้งหมด</option>';
-      masterTimeSlots.forEach(ts => dashTime.add(new Option(ts, ts)));
-
-      const tblStation = document.getElementById("tblFilterStation");
-      tblStation.innerHTML = '<option value="">ทุกสถานีขนถ่าย</option>';
-      masterStations.forEach(st => tblStation.add(new Option(st, st)));
-
-      const tblTime = document.getElementById("tblFilterTime");
-      tblTime.innerHTML = '<option value="">ทุกช่วงเวลา</option>';
-      masterTimeSlots.forEach(ts => tblTime.add(new Option(ts, ts)));
+    // Helper Date Formatters
+    function formatIsoToThaiDate(isoStr) {
+      if (!isoStr) return '-';
+      const parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      const year = parseInt(parts[0], 10) + 543;
+      const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      const month = monthNames[parseInt(parts[1], 10) - 1];
+      const day = parseInt(parts[2], 10);
+      return `${day} ${month} ${year}`;
     }
 
-    // Thai Date String Formatting (ค.ศ. -> พ.ศ.)
-    function formatThaiDate(isoDateStr) {
-      if (!isoDateStr) return "";
-      const parts = isoDateStr.split("-");
-      if (parts.length !== 3) return isoDateStr;
-      const yearTH = parseInt(parts[0], 10) + 543;
-      return `${parts[2]}/${parts[1]}/${yearTH}`;
+    function setDefaultFormDate() {
+      const todayIso = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('formDateIso');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = todayIso;
+        handleDateChange();
+      }
+      const dashDateInput = document.getElementById('dashFilterDate');
+      if (dashDateInput && !dashDateInput.value) {
+        dashDateInput.value = todayIso;
+      }
     }
 
     function handleDateChange() {
-      const isoVal = document.getElementById("formDateIso").value;
-      const thaiVal = formatThaiDate(isoVal);
-      document.getElementById("formThaiDateShow").innerText = thaiVal ? `วันที่ไทย: ${thaiVal}` : "";
+      const val = document.getElementById('formDateIso').value;
+      document.getElementById('formThaiDateShow').textContent = formatIsoToThaiDate(val);
     }
 
-    // Checkbox Mutex Logic for "ปกติ"
+    function renderDashboard() {
+      const summaryType = document.getElementById('dashSummaryType').value;
+      const filterDate = document.getElementById('dashFilterDate').value;
+      const filterTime = document.getElementById('dashFilterTime').value;
+      const filterStation = document.getElementById('dashFilterStation').value;
+      const filterStatus = document.getElementById('dashFilterStatus').value;
+
+      // Filter Data
+      let filtered = appData.filter(r => {
+        if (filterDate && r.dateIso !== filterDate) return false;
+        if (filterTime && r.timeSlot !== filterTime) return false;
+        if (filterStation && r.station !== filterStation) return false;
+        if (filterStatus && (!r.status || !r.status[filterStatus])) return false;
+        return true;
+      });
+
+      // Calculate KPI Statistics
+      let totalRecords = filtered.length;
+      let countNormal = 0;
+      let countTruck = 0;
+      let countCane = 0;
+      let countUnknown = 0;
+      let countOfflineCrane = 0;
+
+      const countsByKey = {
+        normal: 0, waitingTruck: 0, waitingCane: 0,
+        unknown: 0, offline: 0, craneClosed: 0
+      };
+
+      filtered.forEach(r => {
+        if (!r.status) return;
+        if (r.status.normal) countNormal++;
+        if (r.status.waitingTruck) countTruck++;
+        if (r.status.waitingCane) countCane++;
+        if (r.status.unknown) countUnknown++;
+        if (r.status.offline || r.status.craneClosed) countOfflineCrane++;
+
+        Object.keys(STATUS_MAP).forEach(k => {
+          if (r.status[k]) countsByKey[k]++;
+        });
+      });
+
+      // Update KPI HTML
+      document.getElementById('kpiTotalRecords').textContent = totalRecords.toLocaleString();
+      document.getElementById('kpiNormal').textContent = countNormal.toLocaleString();
+      document.getElementById('kpiTruck').textContent = countTruck.toLocaleString();
+      document.getElementById('kpiCane').textContent = countCane.toLocaleString();
+      document.getElementById('kpiUnknown').textContent = countUnknown.toLocaleString();
+      document.getElementById('kpiOfflineCrane').textContent = countOfflineCrane.toLocaleString();
+
+      // Render Charts
+      renderPieChart(countsByKey);
+      renderLineChart(filtered);
+      renderBarChart(filtered);
+
+      // Render Summary Table
+      renderDashboardTable(filtered, summaryType);
+    }
+
+    function renderPieChart(countsByKey) {
+      const ctx = document.getElementById('chartPie').getContext('2d');
+      if (chartPieInstance) chartPieInstance.destroy();
+
+      const labels = Object.keys(STATUS_MAP).map(k => STATUS_MAP[k].name);
+      const data = Object.keys(STATUS_MAP).map(k => countsByKey[k]);
+      const colors = Object.keys(STATUS_MAP).map(k => STATUS_MAP[k].color);
+
+      chartPieInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderLineChart(records) {
+      const ctx = document.getElementById('chartLine').getContext('2d');
+      if (chartLineInstance) chartLineInstance.destroy();
+
+      const timeLabels = CONFIG_TIME_SLOTS;
+      const normalTrend = new Array(timeLabels.length).fill(0);
+      const issueTrend = new Array(timeLabels.length).fill(0);
+
+      records.forEach(r => {
+        const idx = timeLabels.indexOf(r.timeSlot);
+        if (idx !== -1 && r.status) {
+          if (r.status.normal) normalTrend[idx]++;
+          if (r.status.waitingTruck || r.status.waitingCane || r.status.unknown) issueTrend[idx]++;
+        }
+      });
+
+      chartLineInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timeLabels.map(t => t.replace(' น.', '')),
+          datasets: [
+            {
+              label: 'ปกติ',
+              data: normalTrend,
+              borderColor: STATUS_MAP.normal.color,
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'หยุด/มีปัญหา',
+              data: issueTrend,
+              borderColor: STATUS_MAP.waitingTruck.color,
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: 'Sarabun' } } }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
+    function renderBarChart(records) {
+      const ctx = document.getElementById('chartBar').getContext('2d');
+      if (chartBarInstance) chartBarInstance.destroy();
+
+      // Top stations with records
+      const stationMap = {};
+      CONFIG_STATIONS.forEach(st => {
+        stationMap[st] = { normal: 0, truck: 0, cane: 0, unknown: 0 };
+      });
+
+      records.forEach(r => {
+        if (stationMap[r.station] && r.status) {
+          if (r.status.normal) stationMap[r.station].normal++;
+          if (r.status.waitingTruck) stationMap[r.station].truck++;
+          if (r.status.waitingCane) stationMap[r.station].cane++;
+          if (r.status.unknown) stationMap[r.station].unknown++;
+        }
+      });
+
+      // Show top 15 stations or all if less
+      const stations = CONFIG_STATIONS.slice(0, 15);
+
+      chartBarInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: stations.map(s => s.replace('เครน', '')),
+          datasets: [
+            { label: 'ปกติ', data: stations.map(s => stationMap[s].normal), backgroundColor: STATUS_MAP.normal.color },
+            { label: 'หยุดรอรถ', data: stations.map(s => stationMap[s].truck), backgroundColor: STATUS_MAP.waitingTruck.color },
+            { label: 'หยุดรออ้อย', data: stations.map(s => stationMap[s].cane), backgroundColor: STATUS_MAP.waitingCane.color },
+            { label: 'ไม่ทราบสาเหตุ', data: stations.map(s => stationMap[s].unknown), backgroundColor: STATUS_MAP.unknown.color }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: 'Sarabun' } } }
+          },
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
+    function renderDashboardTable(records, type) {
+      const tbody = document.getElementById('dashTableBody');
+      const theadTr = document.getElementById('dashTableHeader');
+      tbody.innerHTML = '';
+
+      let groupingKey = 'station';
+      if (type === 'hourly') groupingKey = 'timeSlot';
+      if (type === 'daily') groupingKey = 'dateStr';
+
+      theadTr.cells[0].textContent = type === 'hourly' ? 'ช่วงเวลา' : (type === 'daily' ? 'วันที่' : 'สถานีขนถ่าย');
+
+      const groups = {};
+      records.forEach(r => {
+        const key = r[groupingKey] || 'ไม่ระบุ';
+        if (!groups[key]) {
+          groups[key] = { normal: 0, waitingTruck: 0, waitingCane: 0, unknown: 0, offline: 0, craneClosed: 0, total: 0 };
+        }
+        groups[key].total++;
+        if (r.status) {
+          Object.keys(STATUS_MAP).forEach(stKey => {
+            if (r.status[stKey]) groups[key][stKey]++;
+          });
+        }
+      });
+
+      const keys = Object.keys(groups);
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>';
+        return;
+      }
+
+      keys.forEach(key => {
+        const g = groups[key];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-bold">${key}</td>
+          <td class="text-center text-success">${g.normal}</td>
+          <td class="text-center text-warning">${g.waitingTruck}</td>
+          <td class="text-center" style="color:#f97316;">${g.waitingCane}</td>
+          <td class="text-center text-danger">${g.unknown}</td>
+          <td class="text-center text-secondary">${g.offline}</td>
+          <td class="text-center text-dark">${g.craneClosed}</td>
+          <td class="text-center fw-bold">${g.total}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     function handleStatusChange(changedKey) {
       if (!ALLOW_NORMAL_WITH_OTHER_STATUS) {
-        const stNormal = document.getElementById("stNormal");
-        if (changedKey === 'normal' && stNormal.checked) {
-          document.getElementById("stWaitingTruck").checked = false;
-          document.getElementById("stWaitingCane").checked = false;
-          document.getElementById("stUnknown").checked = false;
-          document.getElementById("stOffline").checked = false;
-          document.getElementById("stCraneClosed").checked = false;
-        } else if (changedKey !== 'normal') {
-          const isAnyOtherChecked = 
-            document.getElementById("stWaitingTruck").checked ||
-            document.getElementById("stWaitingCane").checked ||
-            document.getElementById("stUnknown").checked ||
-            document.getElementById("stOffline").checked ||
-            document.getElementById("stCraneClosed").checked;
-          if (isAnyOtherChecked) {
-            stNormal.checked = false;
-          }
+        if (changedKey === 'normal' && document.getElementById('stNormal').checked) {
+          ['stWaitingTruck', 'stWaitingCane', 'stUnknown', 'stOffline', 'stCraneClosed'].forEach(id => {
+            document.getElementById(id).checked = false;
+          });
+        } else if (changedKey !== 'normal' && document.getElementById('st' + changedKey.charAt(0).toUpperCase() + changedKey.slice(1)).checked) {
+          document.getElementById('stNormal').checked = false;
         }
       }
     }
 
-    // Base64 File Converter
     function handleFileSelect(event, type) {
       const file = event.target.files[0];
       if (!file) return;
 
       if (file.size > 10 * 1024 * 1024) {
-        showToast("ขนาดไฟล์ต้องไม่เกิน 10 MB", 'error');
-        event.target.value = "";
+        showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB', 'error');
+        event.target.value = '';
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = function(e) {
         const base64 = e.target.result;
         if (type === 'Scale') {
-          tempScaleBase64 = base64;
-          document.getElementById("previewScaleImg").src = base64;
-          document.getElementById("previewScaleImg").classList.remove("d-none");
-          document.getElementById("previewScalePlaceholder").classList.add("d-none");
-          document.getElementById("btnRemoveScale").classList.remove("d-none");
+          formScaleBase64 = base64;
+          document.getElementById('previewScaleImg').src = base64;
+          document.getElementById('previewScaleImg').classList.remove('d-none');
+          document.getElementById('previewScalePlaceholder').classList.add('d-none');
+          document.getElementById('btnRemoveScale').classList.remove('d-none');
         } else {
-          tempCraneBase64 = base64;
-          document.getElementById("previewCraneImg").src = base64;
-          document.getElementById("previewCraneImg").classList.remove("d-none");
-          document.getElementById("previewCranePlaceholder").classList.add("d-none");
-          document.getElementById("btnRemoveCrane").classList.remove("d-none");
+          formCraneBase64 = base64;
+          document.getElementById('previewCraneImg').src = base64;
+          document.getElementById('previewCraneImg').classList.remove('d-none');
+          document.getElementById('previewCranePlaceholder').classList.add('d-none');
+          document.getElementById('btnRemoveCrane').classList.remove('d-none');
         }
       };
       reader.readAsDataURL(file);
@@ -1035,597 +1268,385 @@
 
     function removeImageSelection(type) {
       if (type === 'Scale') {
-        tempScaleBase64 = null;
-        document.getElementById("fileScale").value = "";
-        document.getElementById("previewScaleImg").src = "";
-        document.getElementById("previewScaleImg").classList.add("d-none");
-        document.getElementById("previewScalePlaceholder").classList.remove("d-none");
-        document.getElementById("btnRemoveScale").classList.add("d-none");
+        formScaleBase64 = '';
+        document.getElementById('fileScale').value = '';
+        document.getElementById('previewScaleImg').src = '';
+        document.getElementById('previewScaleImg').classList.add('d-none');
+        document.getElementById('previewScalePlaceholder').classList.remove('d-none');
+        document.getElementById('btnRemoveScale').classList.add('d-none');
       } else {
-        tempCraneBase64 = null;
-        document.getElementById("fileCrane").value = "";
-        document.getElementById("previewCraneImg").src = "";
-        document.getElementById("previewCraneImg").classList.add("d-none");
-        document.getElementById("previewCranePlaceholder").classList.remove("d-none");
-        document.getElementById("btnRemoveCrane").classList.add("d-none");
+        formCraneBase64 = '';
+        document.getElementById('fileCrane').value = '';
+        document.getElementById('previewCraneImg').src = '';
+        document.getElementById('previewCraneImg').classList.add('d-none');
+        document.getElementById('previewCranePlaceholder').classList.remove('d-none');
+        document.getElementById('btnRemoveCrane').classList.add('d-none');
       }
     }
 
     function resetForm() {
-      document.getElementById("recordForm").reset();
-      document.getElementById("editRecordId").value = "";
+      document.getElementById('recordForm').reset();
+      document.getElementById('editRecordId').value = '';
       removeImageSelection('Scale');
       removeImageSelection('Crane');
-      const todayIso = new Date().toISOString().split("T")[0];
-      document.getElementById("formDateIso").value = todayIso;
-      handleDateChange();
+      setDefaultFormDate();
     }
 
-    // Form Submission Handler
     function handleFormSubmit(event) {
       event.preventDefault();
 
-      const editId = document.getElementById("editRecordId").value;
-      const dateIso = document.getElementById("formDateIso").value;
-      const dateStr = formatThaiDate(dateIso);
-      const station = document.getElementById("formStation").value;
-      const timeSlot = document.getElementById("formTimeSlot").value;
+      const editId = document.getElementById('editRecordId').value;
+      const dateIso = document.getElementById('formDateIso').value;
+      const dateStr = formatIsoToThaiDate(dateIso);
+      const station = document.getElementById('formStation').value;
+      const timeSlot = document.getElementById('formTimeSlot').value;
 
-      const status = {
-        normal: document.getElementById("stNormal").checked,
-        waitingTruck: document.getElementById("stWaitingTruck").checked,
-        waitingCane: document.getElementById("stWaitingCane").checked,
-        unknown: document.getElementById("stUnknown").checked,
-        offline: document.getElementById("stOffline").checked,
-        craneClosed: document.getElementById("stCraneClosed").checked
+      const statusObj = {
+        normal: document.getElementById('stNormal').checked,
+        waitingTruck: document.getElementById('stWaitingTruck').checked,
+        waitingCane: document.getElementById('stWaitingCane').checked,
+        unknown: document.getElementById('stUnknown').checked,
+        offline: document.getElementById('stOffline').checked,
+        craneClosed: document.getElementById('stCraneClosed').checked
       };
 
-      const hasStatus = Object.values(status).some(v => v === true);
-      if (!hasStatus) {
-        showToast("กรุณาเลือกสถานการณ์อย่างน้อย 1 รายการ", 'error');
+      const hasSelectedStatus = Object.values(statusObj).some(val => val === true);
+      if (!hasSelectedStatus) {
+        showToast('กรุณาเลือกสถานการณ์อย่างน้อย 1 รายการ', 'error');
         return;
       }
 
-      pendingPayload = {
-        id: editId || null,
+      const payload = {
+        id: editId,
         dateIso: dateIso,
         dateStr: dateStr,
         station: station,
         timeSlot: timeSlot,
-        status: status,
-        scaleImgBase64: tempScaleBase64,
-        craneImgBase64: tempCraneBase64,
-        forceOverwrite: false
+        status: statusObj,
+        scaleImgBase64: formScaleBase64,
+        craneImgBase64: formCraneBase64
       };
 
-      if (editId) {
-        submitRecordToBackend(pendingPayload, "กำลังแก้ไขข้อมูล...");
-      } else {
-        submitRecordToBackend(pendingPayload, "กำลังบันทึกข้อมูล...");
+      // Check duplicate record if creating new
+      if (!editId) {
+        const existing = appData.find(r => r.dateIso === dateIso && r.station === station && r.timeSlot === timeSlot);
+        if (existing) {
+          pendingDuplicateRecord = { payload: payload, existingId: existing.id };
+          document.getElementById('modalDuplicateMsg').innerHTML = `พบข้อมูลบันทึกของ <b>${station}</b> ช่วงเวลา <b>${timeSlot}</b> วันที่ <b>${dateStr}</b> แล้วในระบบ`;
+          const modal = new bootstrap.Modal(document.getElementById('modalDuplicate'));
+          modal.show();
+          return;
+        }
+      }
+
+      saveOrUpdateRecord(payload);
+    }
+
+    function proceedOverwrite() {
+      if (pendingDuplicateRecord) {
+        pendingDuplicateRecord.payload.id = pendingDuplicateRecord.existingId;
+        const modalEl = document.getElementById('modalDuplicate');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        saveOrUpdateRecord(pendingDuplicateRecord.payload);
+        pendingDuplicateRecord = null;
       }
     }
 
-    function submitRecordToBackend(payload, loadingMsg) {
-      showLoading(loadingMsg);
-      const runner = payload.id ? google.script.run.updateRecord(payload) : google.script.run.saveRecord(payload);
+    function saveOrUpdateRecord(payload) {
+      showLoading(payload.id ? 'กำลังอัปเดตข้อมูล...' : 'กำลังบันทึกข้อมูล...');
+      const actionMethod = payload.id ? 'updateRecord' : 'saveRecord';
 
-      runner
-        .withSuccessHandler(res => {
+      google.script.run
+        .withSuccessHandler(response => {
           hideLoading();
-          if (res.success) {
-            showToast(res.message, 'success');
+          if (response && response.success) {
+            showToast(response.message || 'บันทึกสำเร็จ');
             resetForm();
             loadAllData();
             switchTab('table');
-          } else if (res.isDuplicate) {
-            document.getElementById("modalDuplicateMsg").innerText = `${res.message} (วันที่ ${payload.dateStr} | สถานี ${payload.station} | เวลา ${payload.timeSlot})`;
-            const modal = new bootstrap.Modal(document.getElementById("modalDuplicate"));
-            modal.show();
           } else {
-            showToast("ข้อผิดพลาด: " + res.message, 'error');
+            showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
           }
         })
         .withFailureHandler(err => {
           hideLoading();
-          showToast("ระบบขัดข้อง: " + err.toString(), 'error');
-        });
+          showToast('บันทึกไม่สำเร็จ: ' + err.message, 'error');
+        })[actionMethod](payload);
     }
 
-    function proceedOverwrite() {
-      const modalElem = document.getElementById("modalDuplicate");
-      const modal = bootstrap.Modal.getInstance(modalElem);
-      if (modal) modal.hide();
-
-      if (pendingPayload) {
-        pendingPayload.forceOverwrite = true;
-        submitRecordToBackend(pendingPayload, "กำลังปรับปรุงข้อมูล...");
-      }
-    }
-
-
-    // DASHBOARD ENGINE & CHART RENDERING
-    function renderDashboard() {
-      const summaryType = document.getElementById("dashSummaryType").value;
-      const filterDate = document.getElementById("dashFilterDate").value;
-      const filterTime = document.getElementById("dashFilterTime").value;
-      const filterStation = document.getElementById("dashFilterStation").value;
-      const filterStatus = document.getElementById("dashFilterStatus").value;
-
-      // Filter Data
-      let dataset = masterRecords.filter(row => {
-        if (filterDate && row.dateIso !== filterDate) return false;
-        if (filterTime && row.timeSlot !== filterTime) return false;
-        if (filterStation && row.station !== filterStation) return false;
-
-        if (filterStatus) {
-          if (!row.status[filterStatus]) return false;
-        }
-        return true;
-      });
-
-      // Calculate Counters
-      let kpiTotal = dataset.length;
-      let kpiNormal = 0, kpiTruck = 0, kpiCane = 0, kpiUnknown = 0, kpiOffline = 0, kpiCrane = 0;
-
-      dataset.forEach(row => {
-        if (row.status.normal) kpiNormal++;
-        if (row.status.waitingTruck) kpiTruck++;
-        if (row.status.waitingCane) kpiCane++;
-        if (row.status.unknown) kpiUnknown++;
-        if (row.status.offline) kpiOffline++;
-        if (row.status.craneClosed) kpiCrane++;
-      });
-
-      // Update KPI UI
-      document.getElementById("kpiTotalRecords").innerText = kpiTotal;
-      document.getElementById("kpiNormal").innerText = kpiNormal;
-      document.getElementById("kpiTruck").innerText = kpiTruck;
-      document.getElementById("kpiCane").innerText = kpiCane;
-      document.getElementById("kpiUnknown").innerText = kpiUnknown;
-      document.getElementById("kpiOfflineCrane").innerText = (kpiOffline + kpiCrane);
-
-      renderPieChart(kpiNormal, kpiTruck, kpiCane, kpiUnknown, kpiOffline, kpiCrane);
-      renderLineChart(dataset, summaryType);
-      renderBarChart(dataset, filterStation);
-      renderDashboardSummaryTable(dataset, summaryType);
-    }
-
-    function renderPieChart(normal, truck, cane, unknown, offline, crane) {
-      const ctx = document.getElementById('chartPie').getContext('2d');
-      if (chartPieInstance) chartPieInstance.destroy();
-
-      chartPieInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'ไม่ทราบสาเหตุ', 'Offline', 'ปิดเครน'],
-          datasets: [{
-            data: [normal, truck, cane, unknown, offline, crane],
-            backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#6b7280', '#4b5563']
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Sarabun', size: 11 } } }
-          }
-        }
-      });
-    }
-
-    function renderLineChart(dataset, summaryType) {
-      const ctx = document.getElementById('chartLine').getContext('2d');
-      if (chartLineInstance) chartLineInstance.destroy();
-
-      let labels = [];
-      let mapData = {};
-
-      if (summaryType === 'hourly') {
-        labels = [...masterTimeSlots];
-        labels.forEach(l => mapData[l] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
-        dataset.forEach(r => {
-          if (mapData[r.timeSlot]) {
-            if (r.status.normal) mapData[r.timeSlot].normal++;
-            if (r.status.waitingTruck) mapData[r.timeSlot].truck++;
-            if (r.status.waitingCane) mapData[r.timeSlot].cane++;
-            if (r.status.unknown) mapData[r.timeSlot].unknown++;
-            if (r.status.offline) mapData[r.timeSlot].offline++;
-            if (r.status.craneClosed) mapData[r.timeSlot].crane++;
-          }
-        });
-      } else {
-        const uniqueDates = [...new Set(dataset.map(r => r.dateIso))].sort();
-        labels = uniqueDates.length > 0 ? uniqueDates.map(d => formatThaiDate(d)) : ["ไม่มีข้อมูล"];
-        uniqueDates.forEach(d => mapData[formatThaiDate(d)] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
-
-        dataset.forEach(r => {
-          const key = formatThaiDate(r.dateIso);
-          if (mapData[key]) {
-            if (r.status.normal) mapData[key].normal++;
-            if (r.status.waitingTruck) mapData[key].truck++;
-            if (r.status.waitingCane) mapData[key].cane++;
-            if (r.status.unknown) mapData[key].unknown++;
-            if (r.status.offline) mapData[key].offline++;
-            if (r.status.craneClosed) mapData[key].crane++;
-          }
-        });
-      }
-
-      chartLineInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            { label: 'ปกติ', data: labels.map(l => mapData[l]?.normal || 0), borderColor: '#10b981', tension: 0.2 },
-            { label: 'หยุดรอรถ', data: labels.map(l => mapData[l]?.truck || 0), borderColor: '#f59e0b', tension: 0.2 },
-            { label: 'หยุดรออ้อย', data: labels.map(l => mapData[l]?.cane || 0), borderColor: '#f97316', tension: 0.2 },
-            { label: 'ไม่ทราบสาเหตุ', data: labels.map(l => mapData[l]?.unknown || 0), borderColor: '#ef4444', tension: 0.2 },
-            { label: 'Offline', data: labels.map(l => mapData[l]?.offline || 0), borderColor: '#6b7280', tension: 0.2 },
-            { label: 'ปิดเครน', data: labels.map(l => mapData[l]?.crane || 0), borderColor: '#4b5563', tension: 0.2 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { family: 'Sarabun', size: 10 } } } }
-        }
-      });
-    }
-
-    function renderBarChart(dataset, filterStation) {
-      const ctx = document.getElementById('chartBar').getContext('2d');
-      if (chartBarInstance) chartBarInstance.destroy();
-
-      let targetStations = filterStation ? [filterStation] : masterStations.slice(0, 15); // limit for preview viewability
-      let mapData = {};
-      targetStations.forEach(st => mapData[st] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
-
-      dataset.forEach(r => {
-        if (mapData[r.station]) {
-          if (r.status.normal) mapData[r.station].normal++;
-          if (r.status.waitingTruck) mapData[r.station].truck++;
-          if (r.status.waitingCane) mapData[r.station].cane++;
-          if (r.status.unknown) mapData[r.station].unknown++;
-          if (r.status.offline) mapData[r.station].offline++;
-          if (r.status.craneClosed) mapData[r.station].crane++;
-        }
-      });
-
-      chartBarInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: targetStations,
-          datasets: [
-            { label: 'ปกติ', data: targetStations.map(s => mapData[s].normal), backgroundColor: '#10b981' },
-            { label: 'หยุดรอรถ', data: targetStations.map(s => mapData[s].truck), backgroundColor: '#f59e0b' },
-            { label: 'หยุดรออ้อย', data: targetStations.map(s => mapData[s].cane), backgroundColor: '#f97316' },
-            { label: 'ไม่ทราบสาเหตุ', data: targetStations.map(s => mapData[s].unknown), backgroundColor: '#ef4444' },
-            { label: 'Offline', data: targetStations.map(s => mapData[s].offline), backgroundColor: '#6b7280' },
-            { label: 'ปิดเครน', data: targetStations.map(s => mapData[s].crane), backgroundColor: '#4b5563' }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { x: { stacked: true }, y: { stacked: true } },
-          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { family: 'Sarabun', size: 10 } } } }
-        }
-      });
-    }
-
-    function renderDashboardSummaryTable(dataset, summaryType) {
-      const tbody = document.getElementById("dashTableBody");
-      tbody.innerHTML = "";
-
-      let groups = {};
-
-      if (summaryType === 'hourly') {
-        masterTimeSlots.forEach(ts => groups[ts] = { label: ts, normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
-        dataset.forEach(r => {
-          if (groups[r.timeSlot]) {
-            if (r.status.normal) groups[r.timeSlot].normal++;
-            if (r.status.waitingTruck) groups[r.timeSlot].truck++;
-            if (r.status.waitingCane) groups[r.timeSlot].cane++;
-            if (r.status.unknown) groups[r.timeSlot].unknown++;
-            if (r.status.offline) groups[r.timeSlot].offline++;
-            if (r.status.craneClosed) groups[r.timeSlot].crane++;
-          }
-        });
-      } else {
-        masterStations.forEach(st => groups[st] = { label: st, normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
-        dataset.forEach(r => {
-          if (groups[r.station]) {
-            if (r.status.normal) groups[r.station].normal++;
-            if (r.status.waitingTruck) groups[r.station].truck++;
-            if (r.status.waitingCane) groups[r.station].cane++;
-            if (r.status.unknown) groups[r.station].unknown++;
-            if (r.status.offline) groups[r.station].offline++;
-            if (r.status.craneClosed) groups[r.station].crane++;
-          }
-        });
-      }
-
-      Object.values(groups).forEach(g => {
-        const totalStatus = g.normal + g.truck + g.cane + g.unknown + g.offline + g.crane;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="fw-bold">${g.label}</td>
-          <td class="text-center ${g.normal ? 'text-success fw-bold' : 'text-muted'}">${g.normal}</td>
-          <td class="text-center ${g.truck ? 'text-warning fw-bold' : 'text-muted'}">${g.truck}</td>
-          <td class="text-center ${g.cane ? 'text-danger fw-bold' : 'text-muted'}">${g.cane}</td>
-          <td class="text-center ${g.unknown ? 'text-danger fw-bold' : 'text-muted'}">${g.unknown}</td>
-          <td class="text-center ${g.offline ? 'text-secondary fw-bold' : 'text-muted'}">${g.offline}</td>
-          <td class="text-center ${g.crane ? 'text-dark fw-bold' : 'text-muted'}">${g.crane}</td>
-          <td class="text-center fw-bold text-primary">${totalStatus}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-
-    // DATA TABLE & CRUD LOGIC
     function filterAndRenderTable() {
-      const fDate = document.getElementById("tblFilterDate").value;
-      const fTime = document.getElementById("tblFilterTime").value;
-      const fStation = document.getElementById("tblFilterStation").value;
-      const fStatus = document.getElementById("tblFilterStatus").value;
-      const fSearch = document.getElementById("tblSearchText").value.toLowerCase().trim();
+      const filterDate = document.getElementById('tblFilterDate').value;
+      const filterTime = document.getElementById('tblFilterTime').value;
+      const filterStation = document.getElementById('tblFilterStation').value;
+      const filterStatus = document.getElementById('tblFilterStatus').value;
+      const searchText = document.getElementById('tblSearchText').value.toLowerCase().trim();
 
-      filteredRecords = masterRecords.filter(r => {
-        if (fDate && r.dateIso !== fDate) return false;
-        if (fTime && r.timeSlot !== fTime) return false;
-        if (fStation && r.station !== fStation) return false;
-
-        if (fStatus && !r.status[fStatus]) return false;
-
-        if (fSearch) {
-          const str = `${r.dateStr} ${r.station} ${r.timeSlot}`.toLowerCase();
-          if (!str.includes(fSearch)) return false;
+      let filtered = appData.filter(r => {
+        if (filterDate && r.dateIso !== filterDate) return false;
+        if (filterTime && r.timeSlot !== filterTime) return false;
+        if (filterStation && r.station !== filterStation) return false;
+        if (filterStatus && (!r.status || !r.status[filterStatus])) return false;
+        if (searchText) {
+          const matchStation = r.station && r.station.toLowerCase().includes(searchText);
+          const matchDate = r.dateStr && r.dateStr.toLowerCase().includes(searchText);
+          const matchTime = r.timeSlot && r.timeSlot.toLowerCase().includes(searchText);
+          if (!matchStation && !matchDate && !matchTime) return false;
         }
         return true;
       });
 
-      currentPage = 1;
-      renderTablePage();
-    }
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
 
-    function resetTableFilters() {
-      document.getElementById("tblFilterDate").value = "";
-      document.getElementById("tblFilterTime").value = "";
-      document.getElementById("tblFilterStation").value = "";
-      document.getElementById("tblFilterStatus").value = "";
-      document.getElementById("tblSearchText").value = "";
-      filterAndRenderTable();
-    }
+      const startIndex = (currentPage - 1) * pageSize;
+      const pagedData = filtered.slice(startIndex, startIndex + pageSize);
 
-    function renderTablePage() {
-      const tbody = document.getElementById("tblBody");
-      tbody.innerHTML = "";
+      const tbody = document.getElementById('tblBody');
+      tbody.innerHTML = '';
 
-      if (filteredRecords.length === 0) {
+      if (pagedData.length === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="7">
               <div class="empty-state">
                 <i class="fa-solid fa-folder-open"></i>
-                <p class="mb-0 fw-bold">ไม่พบข้อมูลสำหรับเงื่อนไขที่เลือก</p>
+                <h5>ไม่พบข้อมูล</h5>
+                <p class="small text-muted">ลองเปลี่ยนเงื่อนไขการค้นหา หรือเพิ่มบันทึกรายการใหม่</p>
               </div>
             </td>
           </tr>
         `;
-        document.getElementById("tblInfo").innerText = "0 รายการ";
-        document.getElementById("tblPagination").innerHTML = "";
-        return;
+      } else {
+        pagedData.forEach(r => {
+          const tr = document.createElement('tr');
+          
+          // Format Badges for statuses
+          let statusBadgesHtml = '';
+          if (r.status) {
+            Object.keys(STATUS_MAP).forEach(stKey => {
+              if (r.status[stKey]) {
+                const conf = STATUS_MAP[stKey];
+                statusBadgesHtml += `<span class="badge ${conf.class} badge-status"><i class="fa-solid ${conf.icon} me-1"></i>${conf.name}</span>`;
+              }
+            });
+          }
+
+          // Thumbnail images
+          const scaleImgHtml = r.scaleImgUrl ? `<img src="${r.scaleImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'scale')" title="คลิกดูรูปตาชั่ง">` : '<span class="text-muted small">-</span>';
+          const craneImgHtml = r.craneImgUrl ? `<img src="${r.craneImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'crane')" title="คลิกดูรูปเครน">` : '<span class="text-muted small">-</span>';
+
+          tr.innerHTML = `
+            <td class="small fw-bold">${r.dateStr || r.dateIso}</td>
+            <td class="fw-bold text-success">${r.station}</td>
+            <td class="small">${r.timeSlot}</td>
+            <td>${statusBadgesHtml || '-'}</td>
+            <td class="text-center">${scaleImgHtml}</td>
+            <td class="text-center">${craneImgHtml}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-warning me-1" onclick="editRecord('${r.id}')" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteRecordConfirm('${r.id}')" title="ลบ"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
       }
 
-      const totalItems = filteredRecords.length;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      if (currentPage > totalPages) currentPage = totalPages;
-
-      const startIndex = (currentPage - 1) * pageSize;
-      const endIndex = Math.min(startIndex + pageSize, totalItems);
-      const pageData = filteredRecords.slice(startIndex, endIndex);
-
-      pageData.forEach(r => {
-        const tr = document.createElement("tr");
-
-        let statusBadges = "";
-        if (r.status.normal) statusBadges += `<span class="badge-status bg-normal text-white">ปกติ</span>`;
-        if (r.status.waitingTruck) statusBadges += `<span class="badge-status bg-truck text-white">หยุดรอรถ</span>`;
-        if (r.status.waitingCane) statusBadges += `<span class="badge-status bg-cane text-white">หยุดรออ้อย</span>`;
-        if (r.status.unknown) statusBadges += `<span class="badge-status bg-unknown text-white">หยุดไม่ทราบสาเหตุ</span>`;
-        if (r.status.offline) statusBadges += `<span class="badge-status bg-offline text-white">Offline</span>`;
-        if (r.status.craneClosed) statusBadges += `<span class="badge-status bg-crane text-white">ปิดเครน</span>`;
-
-        const scaleImgCell = r.scaleImgUrl
-          ? `<img src="${r.scaleImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'scale', '${r.scaleImgUrl}')">`
-          : `<span class="text-muted small">-</span>`;
-
-        const craneImgCell = r.craneImgUrl
-          ? `<img src="${r.craneImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'crane', '${r.craneImgUrl}')">`
-          : `<span class="text-muted small">-</span>`;
-
-        tr.innerHTML = `
-          <td>${r.dateStr}</td>
-          <td class="fw-bold">${r.station}</td>
-          <td><small>${r.timeSlot}</small></td>
-          <td>${statusBadges}</td>
-          <td class="text-center">${scaleImgCell}</td>
-          <td class="text-center">${craneImgCell}</td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadRecordToEdit('${r.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("tblInfo").innerText = `แสดง ${startIndex + 1} ถึง ${endIndex} จาก ${totalItems} รายการ`;
-      renderPaginationControls(totalPages);
+      // Pagination & Info
+      document.getElementById('tblInfo').textContent = `แสดง ${totalItems > 0 ? startIndex + 1 : 0} ถึง ${Math.min(startIndex + pageSize, totalItems)} จาก ${totalItems} รายการ`;
+      renderPagination(totalPages);
     }
 
-    function renderPaginationControls(totalPages) {
-      const pag = document.getElementById("tblPagination");
-      pag.innerHTML = "";
+    function renderPagination(totalPages) {
+      const container = document.getElementById('tblPagination');
+      container.innerHTML = '';
 
-      const prevLi = document.createElement("li");
+      if (totalPages <= 1) return;
+
+      // Prev Button
+      const prevLi = document.createElement('li');
       prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-      prevLi.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${currentPage - 1})">ก่อนหน้า</a>`;
-      pag.appendChild(prevLi);
+      prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">&laquo;</a>`;
+      container.appendChild(prevLi);
 
-      for (let p = 1; p <= totalPages; p++) {
-        if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
-          const li = document.createElement("li");
-          li.className = `page-item ${p === currentPage ? 'active' : ''}`;
-          li.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${p})">${p}</a>`;
-          pag.appendChild(li);
+      // Page numbers
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+          const li = document.createElement('li');
+          li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+          li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>`;
+          container.appendChild(li);
         }
       }
 
-      const nextLi = document.createElement("li");
+      // Next Button
+      const nextLi = document.createElement('li');
       nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-      nextLi.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${currentPage + 1})">ถัดไป</a>`;
-      pag.appendChild(nextLi);
+      nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">&raquo;</a>`;
+      container.appendChild(nextLi);
     }
 
-    function gotoPage(p) {
-      if (p < 1) return;
-      currentPage = p;
-      renderTablePage();
+    function changePage(page) {
+      currentPage = page;
+      filterAndRenderTable();
     }
 
     function changePageSize() {
-      pageSize = parseInt(document.getElementById("tblPageSize").value, 10);
+      pageSize = parseInt(document.getElementById('tblPageSize').value, 10);
       currentPage = 1;
-      renderTablePage();
+      filterAndRenderTable();
     }
 
-    // Load Record into Form for Edit
-    function loadRecordToEdit(id) {
-      const rec = masterRecords.find(r => r.id === id);
+    function resetTableFilters() {
+      document.getElementById('tblFilterDate').value = '';
+      document.getElementById('tblFilterTime').value = '';
+      document.getElementById('tblFilterStation').value = '';
+      document.getElementById('tblFilterStatus').value = '';
+      document.getElementById('tblSearchText').value = '';
+      currentPage = 1;
+      filterAndRenderTable();
+    }
+
+    function openImageViewer(recordId, type) {
+      const rec = appData.find(r => r.id === recordId);
       if (!rec) return;
 
-      document.getElementById("editRecordId").value = rec.id;
-      document.getElementById("formDateIso").value = rec.dateIso;
-      document.getElementById("formStation").value = rec.station;
-      document.getElementById("formTimeSlot").value = rec.timeSlot;
+      activeImageModal = { recordId: recordId, imageType: type };
+      const imgUrl = type === 'scale' ? rec.scaleImgUrl : rec.craneImgUrl;
+      const titleText = `รูปภาพ${type === 'scale' ? 'ตาชั่ง' : 'เครน'} - ${rec.station} (${rec.timeSlot})`;
 
-      document.getElementById("stNormal").checked = rec.status.normal;
-      document.getElementById("stWaitingTruck").checked = rec.status.waitingTruck;
-      document.getElementById("stWaitingCane").checked = rec.status.waitingCane;
-      document.getElementById("stUnknown").checked = rec.status.unknown;
-      document.getElementById("stOffline").checked = rec.status.offline;
-      document.getElementById("stCraneClosed").checked = rec.status.craneClosed;
+      document.getElementById('modalImgTitle').textContent = titleText;
+      document.getElementById('modalImgPreview').src = imgUrl;
+      document.getElementById('modalBtnDownload').href = imgUrl;
 
+      const modal = new bootstrap.Modal(document.getElementById('modalImageViewer'));
+      modal.show();
+    }
+
+    function executeImageDelete() {
+      if (!activeImageModal.recordId) return;
+
+      if (confirm('คุณต้องการลบรูปภาพนี้ใช่หรือไม่?')) {
+        showLoading('กำลังลบรูปภาพ...');
+        google.script.run
+          .withSuccessHandler(res => {
+            hideLoading();
+            if (res && res.success) {
+              showToast('ลบรูปภาพสำเร็จ');
+              const modalEl = document.getElementById('modalImageViewer');
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              if (modal) modal.hide();
+              loadAllData();
+            } else {
+              showToast('ลบรูปภาพไม่สำเร็จ', 'error');
+            }
+          })
+          .withFailureHandler(err => {
+            hideLoading();
+            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+          })
+          .deleteImage(activeImageModal.recordId, activeImageModal.imageType);
+      }
+    }
+
+    function handleReplaceImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file || !activeImageModal.recordId) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('ไฟล์ต้องมีขนาดไม่เกิน 10MB', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result;
+        showLoading('กำลังเปลี่ยนรูปภาพ...');
+
+        google.script.run
+          .withSuccessHandler(res => {
+            hideLoading();
+            if (res && res.success) {
+              showToast('เปลี่ยนรูปภาพเรียบร้อย');
+              document.getElementById('modalImgPreview').src = base64;
+              loadAllData();
+            } else {
+              showToast('ไม่สามารถเปลี่ยนรูปภาพได้', 'error');
+            }
+          })
+          .withFailureHandler(err => {
+            hideLoading();
+            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+          })
+          .replaceImage(activeImageModal.recordId, activeImageModal.imageType, base64);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function editRecord(id) {
+      const rec = appData.find(r => r.id === id);
+      if (!rec) return;
+
+      switchTab('record');
+
+      document.getElementById('editRecordId').value = rec.id;
+      document.getElementById('formDateIso').value = rec.dateIso;
       handleDateChange();
+      document.getElementById('formStation').value = rec.station;
+      document.getElementById('formTimeSlot').value = rec.timeSlot;
 
+      // Status Checkboxes
+      if (rec.status) {
+        document.getElementById('stNormal').checked = !!rec.status.normal;
+        document.getElementById('stWaitingTruck').checked = !!rec.status.waitingTruck;
+        document.getElementById('stWaitingCane').checked = !!rec.status.waitingCane;
+        document.getElementById('stUnknown').checked = !!rec.status.unknown;
+        document.getElementById('stOffline').checked = !!rec.status.offline;
+        document.getElementById('stCraneClosed').checked = !!rec.status.craneClosed;
+      }
+
+      // Existing Images Previews
       if (rec.scaleImgUrl) {
-        document.getElementById("previewScaleImg").src = rec.scaleImgUrl;
-        document.getElementById("previewScaleImg").classList.remove("d-none");
-        document.getElementById("previewScalePlaceholder").classList.add("d-none");
+        formScaleBase64 = rec.scaleImgUrl;
+        document.getElementById('previewScaleImg').src = rec.scaleImgUrl;
+        document.getElementById('previewScaleImg').classList.remove('d-none');
+        document.getElementById('previewScalePlaceholder').classList.add('d-none');
+        document.getElementById('btnRemoveScale').classList.remove('d-none');
       } else {
         removeImageSelection('Scale');
       }
 
       if (rec.craneImgUrl) {
-        document.getElementById("previewCraneImg").src = rec.craneImgUrl;
-        document.getElementById("previewCraneImg").classList.remove("d-none");
-        document.getElementById("previewCranePlaceholder").classList.add("d-none");
+        formCraneBase64 = rec.craneImgUrl;
+        document.getElementById('previewCraneImg').src = rec.craneImgUrl;
+        document.getElementById('previewCraneImg').classList.remove('d-none');
+        document.getElementById('previewCranePlaceholder').classList.add('d-none');
+        document.getElementById('btnRemoveCrane').classList.remove('d-none');
       } else {
         removeImageSelection('Crane');
       }
-
-      switchTab('record');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Delete Record
-    function confirmDeleteRecord(id) {
-      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรายการนี้? (รวมถึงรูปภาพทั้งหมด)")) {
-        showLoading("กำลังลบข้อมูล...");
+    function deleteRecordConfirm(id) {
+      if (confirm('คุณแน่ใจหรือว่าต้องการลบรายการบันทึกนี้?')) {
+        showLoading('กำลังลบรายการ...');
         google.script.run
           .withSuccessHandler(res => {
             hideLoading();
-            if (res.success) {
-              showToast(res.message, 'success');
+            if (res && res.success) {
+              showToast(res.message || 'ลบข้อมูลสำเร็จ');
               loadAllData();
             } else {
-              showToast("ลบข้อมูลไม่สำเร็จ: " + res.message, 'error');
+              showToast('ไม่สามารถลบรายการได้', 'error');
             }
           })
           .withFailureHandler(err => {
             hideLoading();
-            showToast("เกิดข้อผิดพลาด: " + err.toString(), 'error');
+            showToast('เกิดข้อผิดพลาดในการลบ: ' + err.message, 'error');
           })
           .deleteRecord(id);
       }
-    }
-
-    // IMAGE VIEWER MODAL & ACTIONS
-    function openImageViewer(recordId, imageType, imgUrl) {
-      currentImageContext = { recordId, imageType };
-      document.getElementById("modalImgTitle").innerText = imageType === 'scale' ? 'รูปภาพตาชั่ง' : 'รูปภาพเครน';
-      document.getElementById("modalImgPreview").src = imgUrl;
-      document.getElementById("modalBtnDownload").href = imgUrl;
-
-      const modal = new bootstrap.Modal(document.getElementById("modalImageViewer"));
-      modal.show();
-    }
-
-    function executeImageDelete() {
-      if (!confirm("คุณต้องการลบรูปภาพนี้ออกจากระบบหรือไม่?")) return;
-
-      const modalElem = document.getElementById("modalImageViewer");
-      const modal = bootstrap.Modal.getInstance(modalElem);
-      if (modal) modal.hide();
-
-      showLoading("กำลังลบรูปภาพ...");
-      google.script.run
-        .withSuccessHandler(res => {
-          hideLoading();
-          if (res.success) {
-            showToast(res.message, 'success');
-            loadAllData();
-          } else {
-            showToast("ลบรูปภาพล้มเหลว: " + res.message, 'error');
-          }
-        })
-        .withFailureHandler(err => {
-          hideLoading();
-          showToast("ระบบขัดข้อง: " + err.toString(), 'error');
-        })
-        .deleteImage(currentImageContext.recordId, currentImageContext.imageType);
-    }
-
-    function handleReplaceImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const modalElem = document.getElementById("modalImageViewer");
-      const modal = bootstrap.Modal.getInstance(modalElem);
-      if (modal) modal.hide();
-
-      showLoading("กำลังอัปโหลดรูปภาพใหม่...");
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        google.script.run
-          .withSuccessHandler(res => {
-            hideLoading();
-            if (res.success) {
-              showToast(res.message, 'success');
-              loadAllData();
-            } else {
-              showToast("อัปโหลดไม่สำเร็จ: " + res.message, 'error');
-            }
-          })
-          .withFailureHandler(err => {
-            hideLoading();
-            showToast("ข้อผิดพลาด: " + err.toString(), 'error');
-          })
-          .replaceImage(currentImageContext.recordId, currentImageContext.imageType, base64);
-      };
-      reader.readAsDataURL(file);
     }
   </script>
 </body>
