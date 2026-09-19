@@ -1,743 +1,1632 @@
 <!DOCTYPE html>
-<html lang="th" class="h-full bg-slate-50">
+<html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรายงานสถานการณ์สถานีขนถ่ายอ้อย โรงงานน้ำตาลราชสีมา 2569/70</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #F4FBF7; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #E6F4EA; }
-        ::-webkit-scrollbar-thumb { background: #A7F3D0; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #34D399; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สถานการณ์สถานีขนถ่ายอ้อย โรงงานน้ำตาลราชสีมา 2569/70</title>
+  
+  <!-- CSS Dependencies -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- JS Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --mint-dark: #1b4d3e;
+      --mint-primary: #2e7d62;
+      --mint-medium: #4caf50;
+      --mint-light: #a3e635;
+      --mint-bg: #f0fdf4;
+      --mint-card-bg: #ffffff;
+      --mint-border: #bbf7d0;
+      
+      --status-normal: #10b981;
+      --status-truck: #f59e0b;
+      --status-cane: #f97316;
+      --status-unknown: #ef4444;
+      --status-offline: #6b7280;
+      --status-crane: #4b5563;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: var(--mint-bg);
+      color: #333333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .navbar-mint {
+      background-color: var(--mint-dark);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .navbar-brand {
+      color: #ffffff !important;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+
+    .nav-link {
+      color: #e2e8f0 !important;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem !important;
+      margin: 0 0.2rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background-color: var(--mint-primary);
+      color: #ffffff !important;
+      font-weight: 600;
+    }
+
+    .card-mint {
+      background: var(--mint-card-bg);
+      border: 1px solid var(--mint-border);
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+      margin-bottom: 1.25rem;
+    }
+
+    .card-mint .card-header {
+      background-color: #f8fafc;
+      border-bottom: 1px solid var(--mint-border);
+      font-weight: 600;
+      color: var(--mint-dark);
+      border-radius: 12px 12px 0 0;
+    }
+
+    .stat-card {
+      border-radius: 10px;
+      padding: 1rem;
+      color: white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card .count {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .stat-card .label {
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+
+    .stat-card .icon-bg {
+      position: absolute;
+      right: 10px;
+      bottom: -5px;
+      font-size: 3rem;
+      opacity: 0.15;
+    }
+
+    .bg-normal { background-color: var(--status-normal); }
+    .bg-truck { background-color: var(--status-truck); }
+    .bg-cane { background-color: var(--status-cane); }
+    .bg-unknown { background-color: var(--status-unknown); }
+    .bg-offline { background-color: var(--status-offline); }
+    .bg-crane { background-color: var(--status-crane); }
+
+    .badge-status {
+      font-size: 0.75rem;
+      padding: 0.35em 0.65em;
+      border-radius: 6px;
+      font-weight: 500;
+      margin-right: 2px;
+      margin-bottom: 2px;
+      display: inline-block;
+    }
+
+    .btn-mint {
+      background-color: var(--mint-primary);
+      color: white;
+      border: none;
+    }
+    .btn-mint:hover {
+      background-color: var(--mint-dark);
+      color: white;
+    }
+
+    .img-preview-box {
+      width: 100%;
+      height: 160px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: #f8fafc;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .img-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .overlay-loading {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+    }
+
+    .table-responsive {
+      border-radius: 8px;
+    }
+
+    .thumb-img {
+      width: 45px;
+      height: 45px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+    }
+
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: #94a3b8;
+    }
+    
+    .empty-state i {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Custom Checkbox Cards */
+    .checkbox-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: #ffffff;
+    }
+    .checkbox-card:hover {
+      border-color: var(--mint-primary);
+      background-color: #f0fdf4;
+    }
+    .checkbox-card input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--mint-primary);
+    }
+  </style>
 </head>
-<body class="min-h-full text-slate-800 flex flex-col justify-between">
-<div>
-<header class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white shadow-md sticky top-0 z-30">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-    <div class="flex items-center space-x-3">
-      <div>
-        <h1 class="text-lg sm:text-xl font-bold leading-tight">ระบบรายงานสถานการณ์สถานีขนถ่ายอ้อย</h1>
-        <p class="text-xs sm:text-sm text-emerald-100 flex items-center gap-1.5 font-light"><span>โรงงานน้ำตาลราชสีมา</span><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span class="bg-emerald-800/60 px-2 py-0.5 rounded-full text-xs text-emerald-200 font-medium">ปีการผลิต 2569/70</span></p>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="overlay-loading d-none">
+    <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+    <h5 id="loadingText" class="fw-bold text-success">กำลังโหลดข้อมูล...</h5>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-mint sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><i class="fa-solid fa-industry me-2"></i>โรงงานน้ำตาลราชสีมา 2569/70</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" onclick="switchTab('record')"><i class="fa-solid fa-pen-to-square me-1"></i> บันทึกสถานการณ์</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" onclick="switchTab('table')"><i class="fa-solid fa-table me-1"></i> ตารางข้อมูล</a>
+          </li>
+        </ul>
       </div>
     </div>
-    <div class="flex items-center justify-between md:justify-end gap-3 text-xs sm:text-sm">
-      <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2"><span id="currentDateDisplay" class="font-medium">--/--/----</span></div>
-      <button onclick="openApiModal()" class="bg-emerald-800/80 hover:bg-emerald-900 transition-colors px-3 py-1.5 rounded-xl border border-emerald-400/30 flex items-center gap-1.5 text-emerald-100 shadow-sm" title="ตั้งค่า Google Apps Script Web App URL"><span>ตั้งค่า API</span></button>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container-fluid py-3 flex-grow-1">
+
+    <!-- PAGE 1: DASHBOARD -->
+    <div id="pageDashboard">
+      <div class="card-mint p-3 mb-3">
+        <div class="row align-items-center g-2">
+          <div class="col-md-6">
+            <h4 class="fw-bold text-success mb-0"><i class="fa-solid fa-chart-line me-2"></i>รายงานสถานการณ์สถานีขนถ่ายอ้อย</h4>
+            <small class="text-muted">ปีการผลิต 2569/70 | ข้อมูลแบบ Real-time</small>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <button class="btn btn-outline-success btn-sm" onclick="loadAllData()"><i class="fa-solid fa-rotate me-1"></i> รีเฟรชข้อมูล</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Filters -->
+      <div class="card-mint p-3">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">รูปแบบสรุป</label>
+            <select class="form-select form-select-sm" id="dashSummaryType" onchange="renderDashboard()">
+              <option value="all">สรุปทั้งหมด</option>
+              <option value="hourly">สรุปรายชั่วโมง</option>
+              <option value="daily">สรุปรายวัน</option>
+            </select>
+          </div>
+          <div class="col-md-2" id="dashDateGroup">
+            <label class="form-label small fw-bold">วันที่</label>
+            <input type="date" class="form-select form-select-sm" id="dashFilterDate" onchange="renderDashboard()">
+          </div>
+          <div class="col-md-2" id="dashTimeGroup">
+            <label class="form-label small fw-bold">ช่วงเวลา</label>
+            <select class="form-select form-select-sm" id="dashFilterTime" onchange="renderDashboard()">
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">สถานีขนถ่าย</label>
+            <select class="form-select form-select-sm" id="dashFilterStation" onchange="renderDashboard()">
+              <option value="">ทุกสถานี (43 สถานี)</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">สถานการณ์</label>
+            <select class="form-select form-select-sm" id="dashFilterStatus" onchange="renderDashboard()">
+              <option value="">ทั้งหมด</option>
+              <option value="normal">ปกติ</option>
+              <option value="waitingTruck">หยุดรอรถ</option>
+              <option value="waitingCane">หยุดรออ้อย</option>
+              <option value="unknown">หยุดไม่ทราบสาเหตุ</option>
+              <option value="offline">Offline</option>
+              <option value="craneClosed">ปิดเครน</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary KPI Cards -->
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-primary">
+            <div class="label">รายการทั้งหมด</div>
+            <div class="count" id="kpiTotalRecords">0</div>
+            <i class="fa-solid fa-list-check icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-normal">
+            <div class="label">ปกติ</div>
+            <div class="count" id="kpiNormal">0</div>
+            <i class="fa-solid fa-circle-check icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-truck">
+            <div class="label">หยุดรอรถ</div>
+            <div class="count" id="kpiTruck">0</div>
+            <i class="fa-solid fa-truck-front icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-cane">
+            <div class="label">หยุดรออ้อย</div>
+            <div class="count" id="kpiCane">0</div>
+            <i class="fa-solid fa-wheat-awn icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-unknown">
+            <div class="label">ไม่ทราบสาเหตุ</div>
+            <div class="count" id="kpiUnknown">0</div>
+            <i class="fa-solid fa-circle-question icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="stat-card bg-offline">
+            <div class="label">Offline / ปิดเครน</div>
+            <div class="count" id="kpiOfflineCrane">0</div>
+            <i class="fa-solid fa-power-off icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <div class="card-mint h-100 p-3">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-1"></i> สัดส่วนสถานการณ์</h6>
+            <div style="height: 260px; position: relative;">
+              <canvas id="chartPie"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="card-mint h-100 p-3">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-line me-1"></i> แนวโน้มสถานการณ์ตามช่วงเวลา</h6>
+            <div style="height: 260px; position: relative;">
+              <canvas id="chartLine"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card-mint p-3">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-column me-1"></i> สถานการณ์แยกตามรายสถานี</h6>
+            <div style="height: 320px; position: relative;">
+              <canvas id="chartBar"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Table -->
+      <div class="card-mint p-3">
+        <h6 class="fw-bold mb-3"><i class="fa-solid fa-table-cells me-1"></i> ตารางสรุปสถานการณ์</h6>
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0" id="dashSummaryTable">
+            <thead class="table-light">
+              <tr id="dashTableHeader">
+                <th>หัวข้อสรุป</th>
+                <th class="text-center">ปกติ</th>
+                <th class="text-center">หยุดรอรถ</th>
+                <th class="text-center">หยุดรออ้อย</th>
+                <th class="text-center">ไม่ทราบสาเหตุ</th>
+                <th class="text-center">Offline</th>
+                <th class="text-center">ปิดเครน</th>
+                <th class="text-center">รวมสถานการณ์</th>
+              </tr>
+            </thead>
+            <tbody id="dashTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- PAGE 2: RECORD FORM -->
+    <div id="pageRecord" class="d-none">
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <div class="card-mint p-4">
+            <h4 class="fw-bold text-success mb-3 border-bottom pb-2">
+              <i class="fa-solid fa-pen-to-square me-2"></i>บันทึกสถานการณ์สถานีขนถ่าย
+            </h4>
+            
+            <form id="recordForm" onsubmit="handleFormSubmit(event)">
+              <input type="hidden" id="editRecordId" value="">
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">วันที่ <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" id="formDateIso" required onchange="handleDateChange()">
+                  <small class="text-muted" id="formThaiDateShow">-</small>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">สถานีขนถ่าย <span class="text-danger">*</span></label>
+                  <select class="form-select" id="formStation" required>
+                    <option value="">-- เลือกสถานีขนถ่าย --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">ช่วงเวลา <span class="text-danger">*</span></label>
+                  <select class="form-select" id="formTimeSlot" required>
+                    <option value="">-- เลือกช่วงเวลา --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Status Selection Checkboxes -->
+              <div class="mb-4">
+                <label class="form-label fw-bold mb-2">
+                  สถานการณ์ <span class="text-danger">*</span> <small class="text-muted fw-normal">(เลือกได้มากกว่า 1 รายการ)</small>
+                </label>
+
+                <div class="row g-2">
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stNormal" class="me-2" onchange="handleStatusChange('normal')">
+                      <label for="stNormal" class="mb-0 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> ปกติ</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stWaitingTruck" class="me-2" onchange="handleStatusChange('waitingTruck')">
+                      <label for="stWaitingTruck" class="mb-0 text-warning fw-bold"><i class="fa-solid fa-truck-front me-1"></i> หยุดรอรถ</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stWaitingCane" class="me-2" onchange="handleStatusChange('waitingCane')">
+                      <label for="stWaitingCane" class="mb-0 text-danger fw-bold" style="color: #f97316 !important;"><i class="fa-solid fa-wheat-awn me-1"></i> หยุดรออ้อย</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stUnknown" class="me-2" onchange="handleStatusChange('unknown')">
+                      <label for="stUnknown" class="mb-0 text-danger fw-bold"><i class="fa-solid fa-circle-question me-1"></i> หยุดไม่ทราบสาเหตุ</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stOffline" class="me-2" onchange="handleStatusChange('offline')">
+                      <label for="stOffline" class="mb-0 text-secondary fw-bold"><i class="fa-solid fa-wifi me-1"></i> Offline</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <div class="checkbox-card d-flex align-items-center">
+                      <input type="checkbox" id="stCraneClosed" class="me-2" onchange="handleStatusChange('craneClosed')">
+                      <label for="stCraneClosed" class="mb-0 text-dark fw-bold"><i class="fa-solid fa-power-off me-1"></i> ปิดเครน</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image File Uploads -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพตาชั่ง <small class="text-muted">(JPG, PNG, WEBP &lt; 10MB)</small></label>
+                  <div class="img-preview-box" onclick="document.getElementById('fileScale').click()">
+                    <div id="previewScalePlaceholder" class="text-center p-2">
+                      <i class="fa-solid fa-weight-hanging fs-2 text-muted mb-1"></i>
+                      <div class="small text-muted">คลิกเพื่อเลือกรูปตาชั่ง</div>
+                    </div>
+                    <img id="previewScaleImg" src="" class="d-none" alt="รูปตาชั่ง">
+                  </div>
+                  <input type="file" id="fileScale" accept="image/*" class="d-none" onchange="handleFileSelect(event, 'Scale')">
+                  <button type="button" id="btnRemoveScale" class="btn btn-sm btn-outline-danger w-100 mt-2 d-none" onclick="removeImageSelection('Scale')">
+                    <i class="fa-solid fa-trash me-1"></i> ลบรูปตาชั่ง
+                  </button>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพเครน <small class="text-muted">(JPG, PNG, WEBP &lt; 10MB)</small></label>
+                  <div class="img-preview-box" onclick="document.getElementById('fileCrane').click()">
+                    <div id="previewCranePlaceholder" class="text-center p-2">
+                      <i class="fa-solid fa-tower-observation fs-2 text-muted mb-1"></i>
+                      <div class="small text-muted">คลิกเพื่อเลือกรูปเครน</div>
+                    </div>
+                    <img id="previewCraneImg" src="" class="d-none" alt="รูปเครน">
+                  </div>
+                  <input type="file" id="fileCrane" accept="image/*" class="d-none" onchange="handleFileSelect(event, 'Crane')">
+                  <button type="button" id="btnRemoveCrane" class="btn btn-sm btn-outline-danger w-100 mt-2 d-none" onclick="removeImageSelection('Crane')">
+                    <i class="fa-solid fa-trash me-1"></i> ลบรูปเครน
+                  </button>
+                </div>
+              </div>
+
+              <!-- Form Buttons -->
+              <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                <button type="button" class="btn btn-light px-4" onclick="resetForm()"><i class="fa-solid fa-rotate-left me-1"></i> ล้างข้อมูล</button>
+                <button type="submit" class="btn btn-mint px-5"><i class="fa-solid fa-floppy-disk me-1"></i> บันทึกข้อมูล</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- PAGE 3: DATA TABLE -->
+    <div id="pageTable" class="d-none">
+      <div class="card-mint p-3">
+        <h4 class="fw-bold text-success mb-3"><i class="fa-solid fa-table me-2"></i>รายการข้อมูลบันทึกทั้งหมด</h4>
+
+        <!-- Filters -->
+        <div class="row g-2 mb-3">
+          <div class="col-md-2">
+            <input type="date" class="form-control form-control-sm" id="tblFilterDate" onchange="filterAndRenderTable()">
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" id="tblFilterTime" onchange="filterAndRenderTable()">
+              <option value="">ทุกช่วงเวลา</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select form-select-sm" id="tblFilterStation" onchange="filterAndRenderTable()">
+              <option value="">ทุกสถานีขนถ่าย</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" id="tblFilterStatus" onchange="filterAndRenderTable()">
+              <option value="">ทุกสถานการณ์</option>
+              <option value="normal">ปกติ</option>
+              <option value="waitingTruck">หยุดรอรถ</option>
+              <option value="waitingCane">หยุดรออ้อย</option>
+              <option value="unknown">หยุดไม่ทราบสาเหตุ</option>
+              <option value="offline">Offline</option>
+              <option value="craneClosed">ปิดเครน</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" id="tblSearchText" placeholder="ค้นหา..." onkeyup="filterAndRenderTable()">
+              <button class="btn btn-outline-secondary" onclick="resetTableFilters()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Responsive -->
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered align-middle mb-0" id="mainDataTable">
+            <thead class="table-success">
+              <tr>
+                <th style="width: 110px;">วันที่</th>
+                <th style="width: 170px;">สถานี</th>
+                <th style="width: 130px;">ช่วงเวลา</th>
+                <th>สถานการณ์</th>
+                <th class="text-center" style="width: 70px;">รูปตาชั่ง</th>
+                <th class="text-center" style="width: 70px;">รูปเครน</th>
+                <th class="text-center" style="width: 100px;">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tblBody">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-middle mt-3 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">แสดง</span>
+            <select class="form-select form-select-sm" id="tblPageSize" style="width: 70px;" onchange="changePageSize()">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-muted" id="tblInfo">รายการ</span>
+          </div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0" id="tblPagination">
+            </ul>
+          </nav>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- MODAL 1: DUPLICATE OVERWRITE PROMPT -->
+  <div class="modal fade" id="modalDuplicate" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>พบข้อมูลซ้ำในระบบ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="modalDuplicateMsg">มีข้อมูลของสถานีและช่วงเวลานี้แล้วในระบบ</p>
+          <p class="text-muted small mt-2">คุณต้องการแก้ไขข้อมูลเดิมที่มีอยู่ หรือยกเลิกการบันทึก?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-warning fw-bold" onclick="proceedOverwrite()"><i class="fa-solid fa-pen-to-square me-1"></i> แก้ไขข้อมูลเดิม</button>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="bg-emerald-900/40 border-t border-emerald-500/20 px-4 sm:px-6"><div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-4"><button id="tab-btn-form" onclick="switchTab('form')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-emerald-300 text-white bg-white/10"><span>[1] บันทึกข้อมูลรายงาน</span></button><button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-transparent text-emerald-100 hover:text-white hover:bg-white/5"><span>[2] Dashboard สรุปสถานการณ์</span></button><button id="tab-btn-table" onclick="switchTab('table')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-transparent text-emerald-100 hover:text-white hover:bg-white/5"><span>[3] รายการรายงานที่เคยบันทึกไว้</span></button></div></div>
-</header>
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-<section id="tab-form-content" class="space-y-6">
-<div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-<div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between"><h2 class="text-base sm:text-lg font-semibold text-emerald-900 flex items-center gap-2"><span id="formTitleText">แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย</span></h2><span class="text-xs text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full font-medium">กรอกข้อมูลตามจริง</span></div>
-<form id="reportForm" onsubmit="handleFormSubmit(event)" class="p-4 sm:p-6 space-y-6">
-<input type="hidden" id="editRowId" value="">
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-<div class="space-y-1.5"><label for="stationSelect" class="block text-xs sm:text-sm font-medium text-slate-700">สถานีขนถ่าย (43 สถานี) <span class="text-rose-500">*</span></label><div class="relative"><select id="stationSelect" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all pr-8"><option value="" disabled selected>-- เลือกสถานีขนถ่าย --</option></select></div></div>
-<div class="space-y-1.5"><label for="reportDate" class="block text-xs sm:text-sm font-medium text-slate-700">วันที่บันทึก (พ.ศ. ไทย) <span class="text-rose-500">*</span></label><input type="date" id="reportDate" required onchange="updateThaiDateDisplay(this.value)" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all"><p id="thaiDatePreview" class="text-xs text-emerald-700 font-medium pl-1">รูปแบบ: -</p></div>
-<div class="space-y-1.5"><label for="timeSlot" class="block text-xs sm:text-sm font-medium text-slate-700">ช่วงเวลา <span class="text-rose-500">*</span></label><div class="relative"><select id="timeSlot" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all pr-8"><option value="" disabled selected>-- เลือกช่วงเวลา --</option><option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option><option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option><option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option><option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option><option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option><option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option><option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option><option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option><option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option><option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option><option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option><option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option></select></div></div>
-</div>
-<div class="space-y-2"><label class="block text-xs sm:text-sm font-medium text-slate-700">สถานะการทำงาน <span class="text-rose-500">* (เลือกได้ 1 - 2 อย่าง)</span></label><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-emerald-200 bg-emerald-50/50 rounded-xl cursor-pointer hover:bg-emerald-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="ปกติ" checked onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-emerald-900">ปกติ</span><div class="absolute inset-0 border-2 border-emerald-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-amber-200 bg-amber-50/50 rounded-xl cursor-pointer hover:bg-amber-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดรอรถ" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-amber-900">หยุดรอรถ</span><div class="absolute inset-0 border-2 border-amber-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-blue-200 bg-blue-50/50 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดรออ้อย" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-blue-900">หยุดรออ้อย</span><div class="absolute inset-0 border-2 border-blue-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-rose-200 bg-rose-50/50 rounded-xl cursor-pointer hover:bg-rose-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดไม่ทราบสาเหตุ" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-rose-900">หยุดไม่ทราบสาเหตุ</span><div class="absolute inset-0 border-2 border-rose-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-slate-200 bg-slate-100/60 rounded-xl cursor-pointer hover:bg-slate-200/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="offline" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-slate-700">offline</span><div class="absolute inset-0 border-2 border-slate-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-purple-200 bg-purple-50/50 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="ปิดเครน" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-purple-900">ปิดเครน</span><div class="absolute inset-0 border-2 border-purple-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label></div></div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-<div class="flex items-center justify-between mb-2"><label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">1. รูปตาชั่ง</label><span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span></div>
-<div id="scalePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group"><img id="scaleImagePreview" src="" alt="รูปตาชั่ง" class="w-full h-48 object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"><button type="button" onclick="downloadImage('scale')" class="px-3 py-2 text-xs font-medium bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป">ดาวน์โหลด</button><button type="button" onclick="removeImage('scale')" class="px-3 py-2 text-xs font-medium bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป">ลบรูป</button></div></div>
-<div id="scaleUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer"><input type="file" id="scaleImageInput" accept="image/*" onchange="handleImageSelect(event, 'scale')" class="hidden"><label for="scaleImageInput" class="cursor-pointer flex flex-col items-center"><span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปตาชั่ง</span><span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span></label></div></div><div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-<div class="flex items-center justify-between mb-2"><label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">2. รูปเครน</label><span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span></div>
-<div id="cranePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group"><img id="craneImagePreview" src="" alt="รูปเครน" class="w-full h-48 object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"><button type="button" onclick="downloadImage('crane')" class="px-3 py-2 text-xs font-medium bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป"></button><button type="button" onclick="removeImage('crane')" class="px-3 py-2 text-xs font-medium bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป"></button></div></div>
-<div id="craneUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer"><input type="file" id="craneImageInput" accept="image/*" onchange="handleImageSelect(event, 'crane')" class="hidden"><label for="craneImageInput" class="cursor-pointer flex flex-col items-center"><span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปเครน</span><span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span></label></div></div></div>
-<div class="space-y-1.5"><label for="noteInput" class="block text-xs sm:text-sm font-medium text-slate-700">หมายเหตุเพิ่มเติม (ถ้ามี)</label><input type="text" id="noteInput" placeholder="ระบุรายละเอียดเพิ่มเติม..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all"></div>
-<div class="flex items-center justify-end gap-3 pt-2"><button type="button" onclick="resetForm()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-medium transition-colors">ล้างฟอร์ม</button><button type="submit" id="btnSubmitForm" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"><span id="submitBtnText">บันทึกข้อมูลรายงาน</span></button></div>
-</form></div></section>
-<section id="tab-dashboard-content" class="hidden space-y-6">
-<div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="flex items-center gap-2 text-emerald-900 font-semibold text-sm"><span>ตัวกรองสรุปข้อมูลรายวัน:</span></div><select id="dailyFilterSelect" onchange="handleDailyFilterChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 font-medium min-w-[220px]"><option value="ALL">-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --</option></select></div>
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5"><div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">รายงานทั้งหมด</p><h3 id="kpiTotalReports" class="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">0</h3><span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">ฉบับ</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">เปิดใช้งานปกติ</p><h3 id="kpiNormalCount" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">0</h3><span class="text-[10px] text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-amber-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">หยุดชั่วคราว / มีปัญหา</p><h3 id="kpiIssueCount" class="text-2xl sm:text-3xl font-bold text-amber-600 mt-1">0</h3><span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">Offline / ปิดเครน</p><h3 id="kpiOfflineCount" class="text-2xl sm:text-3xl font-bold text-slate-600 mt-1">0</h3><span class="text-[10px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div></div>
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-<div class="lg:col-span-5 min-w-0 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">สัดส่วนสถานะการทำงาน</h3><span class="text-[11px] text-slate-400">ตามสถานะล่าสุดของแต่ละสถานี</span></div><div class="relative w-full h-64"><canvas id="statusDoughnutChart"></canvas></div></div>
-<div class="lg:col-span-7 min-w-0 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">ติดตามสถานะตามช่วงเวลา (08:00 - 20:00 น.)</h3><span class="text-[11px] text-slate-400">จำแนกตามสถานะ</span></div><div class="relative w-full h-64"><canvas id="hourlyLineChart"></canvas></div></div>
-</div>
-<div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm">
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-100 pb-3"><div><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">สถานะล่าสุดของ 43 สถานีขนถ่าย</h3><p class="text-xs text-slate-500">แสดงสถานะล่าสุดที่ถูกบันทึกเข้ามาของแต่ละสถานี</p></div><div class="flex flex-wrap gap-2 text-[11px]"><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ปกติ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> รอรถ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> รออ้อย</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> ไม่ทราบสาเหตุ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Offline</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> ปิดเครน</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span> ยังไม่มีรายงาน</span></div></div>
-<div id="stationsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 max-h-96 overflow-y-auto pr-1"></div>
-</div></section>
-<section id="tab-table-content" class="hidden space-y-6">
-<div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-<div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-<div><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">รายการรายงานที่เคยบันทึกไว้</h3><p class="text-xs text-slate-500">แสดงข้อมูลย้อนหลัง และรูปภาพจากสถานีขนาด 5x5 ซม.</p></div>
-<div class="flex flex-wrap items-center gap-2">
-<div class="relative min-w-[150px]"><select id="tableDateFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 font-medium focus:ring-emerald-500 focus:border-emerald-500"><option value="ALL">-- ทุกวันที่ --</option></select></div>
-<div class="relative min-w-[160px]"><select id="tableTimeSlotFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 font-medium focus:ring-emerald-500 focus:border-emerald-500"><option value="ALL">-- ทุกช่วงเวลา --</option><option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option><option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option><option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option><option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option><option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option><option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option><option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option><option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option><option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option><option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option><option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option><option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option></select></div>
-<div class="relative min-w-[150px]"><input type="text" id="searchInput" oninput="renderDataTable()" placeholder="ค้นหาสถานี..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl pl-3 pr-3 py-2 focus:ring-emerald-500 focus:border-emerald-500"></div>
-<button onclick="loadDataFromBackend()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5"><span>รีเฟรชข้อมูล</span></button>
-</div></div>
-<div class="overflow-x-auto"><table class="w-full text-left text-xs sm:text-sm text-slate-600"><thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-[11px] border-b border-slate-200"><tr><th class="py-3 px-4">วัน/เวลา</th><th class="py-3 px-4">สถานีขนถ่าย</th><th class="py-3 px-4">ช่วงเวลา</th><th class="py-3 px-4">สถานะ</th><th class="py-3 px-4 text-center">รูปภาพประกอบ (ขนาด 5x5 ซม.)</th><th class="py-3 px-4">หมายเหตุ</th><th class="py-3 px-4 text-center">จัดการ</th></tr></thead><tbody id="dataTableBody" class="divide-y divide-slate-100"></tbody></table></div>
-</div></section>
-</main>
-</div>
-<div id="photoModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-3 border border-slate-200">
-<div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><span id="photoModalTitle">รูปภาพ</span></h3><button onclick="closePhotoModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">✕</button></div>
-<div class="p-4 flex items-center justify-center bg-slate-900 min-h-[300px]"><img id="photoModalImg" src="" alt="Enlarged photo" class="max-h-[70vh] object-contain rounded-lg"></div>
-<div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2"><a id="photoModalDownloadBtn" download="station_photo.jpg" href="#" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">ดาวน์โหลดรูปภาพ</a><button onclick="closePhotoModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-medium">ปิด</button></div>
-</div></div>
-<div id="apiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-emerald-100">
-<div class="flex items-center justify-between border-b border-slate-100 pb-3"><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">ตั้งค่า Google Apps Script Web App</h3><button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600">✕</button></div>
-<p class="text-xs text-slate-500 leading-relaxed">วาง Web App URL ของ Google Apps Script เพื่อบันทึกข้อมูลลง Google Sheets และอัปโหลดรูปภาพลง Google Drive โดยตรง</p>
-<div class="space-y-1.5"><label class="block text-xs font-medium text-slate-700">Web App URL</label><input type="url" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500"></div>
-<div class="flex justify-end gap-2 pt-2"><button onclick="closeApiModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl">ยกเลิก</button><button onclick="saveApiUrl()" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">บันทึกการตั้งค่า</button></div>
-</div></div>
-<div id="deleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-rose-100">
-<div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl mx-auto font-bold">!</div>
-<div class="text-center space-y-1"><h3 class="text-base font-bold text-slate-800">ยืนยันการลบข้อมูล</h3><p class="text-xs text-slate-500">คุณแน่ใจหรือไม่ว่าต้องการลบรายการรายงานนี้? ข้อมูลในระบบและ Google Sheets จะถูกลบออกทันที</p></div>
-<div class="flex items-center gap-3 pt-2"><button onclick="closeDeleteModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors">ยกเลิก</button><button onclick="confirmDeleteRecord()" class="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-md shadow-rose-600/20 transition-colors">ยืนยันการลบ</button></div>
-</div></div>
-<div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700"><span id="toastIcon" class="text-emerald-400 text-lg font-bold">✓</span><span id="toastMessage" class="text-xs sm:text-sm font-medium">ข้อความแจ้งเตือน</span></div>
-<div id="loadingOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center text-white"><div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div><p class="text-sm font-medium tracking-wide">กำลังประมวลผลข้อมูล...</p></div>
-<script>
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKTnmtmO5TErA1rZi304N-RErWT3TqLv_XJ0j41PUBQboSeJfKcG7zfdSEC8wFOXR7/exec";
 
-const STATIONS = [
-    "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่", "เครนวังโพธิ์(บ้านเหลื่อม1)",
-    "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน", "เครนทำนบ 2", "เครนทำนบพัฒนา", "เครนนาเสียว",
-    "เครนเนินสง่า", "เครนบ้านเขว้า1", "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1",
-    "เครนบ้านค่าย 2", "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา", "เครนรกฟ้า",
-    "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2", "เครนหนองโคบาล", "เครนหนองบัวแดง",
-    "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2", "เครนหนองบัวลาย", "เครนหนองพลวง", "เครนหนองแวง",
-    "เครนหนองหอย", "เครนหนองหัวฟาน", "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง",
-    "เครนท่าหินโงม", "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4", "เครนภูแลนคา 2",
-    "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
-];
+  <!-- MODAL 2: IMAGE VIEWER / MANAGEMENT -->
+  <div class="modal fade" id="modalImageViewer" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalImgTitle">แสดงรูปภาพ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center bg-light">
+          <img id="modalImgPreview" src="" class="img-fluid rounded shadow-sm" style="max-height: 500px;" alt="Preview">
+          <input type="file" id="modalFileReplace" accept="image/*" class="d-none" onchange="handleReplaceImageUpload(event)">
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <div>
+            <button type="button" class="btn btn-outline-danger btn-sm me-1" onclick="executeImageDelete()"><i class="fa-solid fa-trash me-1"></i> ลบรูปภาพ</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('modalFileReplace').click()"><i class="fa-solid fa-arrows-rotate me-1"></i> เปลี่ยนรูป</button>
+          </div>
+          <div>
+            <a id="modalBtnDownload" href="#" target="_blank" class="btn btn-success btn-sm me-1" download><i class="fa-solid fa-download me-1"></i> ดาวน์โหลด</a>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-const TIME_SLOTS = Array.from({ length: 12 }, (_, i) => {
-    const p = n => String(n).padStart(2, '0');
-    return `${p(8 + i)}:00 - ${p(9 + i)}:00 น.`;
-});
+  <!-- JS Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-const STATUS_LIST = ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ', 'offline', 'ปิดเครน'];
-const STATUS_PRIORITY = ['หยุดไม่ทราบสาเหตุ', 'หยุดรอรถ', 'หยุดรออ้อย', 'offline', 'ปิดเครน', 'ปกติ'];
-const ISSUE_STATUSES = ['หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ'];
-const OFFLINE_STATUSES = ['offline', 'ปิดเครน'];
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // System Constants
+    const ALLOW_NORMAL_WITH_OTHER_STATUS = false;
+    
+    const CONFIG_STATIONS = [
+      "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่",
+      "เครนวังโพธิ์(บ้านเหลื่อม1)", "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน", "เครนทำนบ 2",
+      "เครนทำนบพัฒนา", "เครนนาเสียว", "เครนเนินสง่า", "เครนบ้านเขว้า1",
+      "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1", "เครนบ้านค่าย 2",
+      "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา", "เครนรกฟ้า",
+      "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2", "เครนหนองโคบาล",
+      "เครนหนองบัวแดง", "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2", "เครนหนองบัวลาย",
+      "เครนหนองพลวง", "เครนหนองแวง", "เครนหนองหอย", "เครนหนองหัวฟาน",
+      "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง", "เครนท่าหินโงม",
+      "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4", "เครนภูแลนคา 2",
+      "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
+    ];
 
-const STATUS_STYLE = {
-    'ปกติ':              { badge: 'bg-emerald-100 text-emerald-800', dot: 'text-emerald-500', card: 'bg-emerald-50 border-emerald-200 text-emerald-900', dotBg: 'bg-emerald-500', color: '#10B981' },
-    'หยุดรอรถ':          { badge: 'bg-amber-100 text-amber-800',     dot: 'text-amber-500',   card: 'bg-amber-50 border-amber-200 text-amber-900',       dotBg: 'bg-amber-500',   color: '#F59E0B' },
-    'หยุดรออ้อย':        { badge: 'bg-blue-100 text-blue-800',       dot: 'text-blue-500',    card: 'bg-blue-50 border-blue-200 text-blue-900',          dotBg: 'bg-blue-500',    color: '#3B82F6' },
-    'หยุดไม่ทราบสาเหตุ': { badge: 'bg-rose-100 text-rose-800',       dot: 'text-rose-500',    card: 'bg-rose-50 border-rose-200 text-rose-900',          dotBg: 'bg-rose-500',    color: '#EF4444' },
-    'offline':           { badge: 'bg-slate-200 text-slate-700',     dot: 'text-slate-500',   card: 'bg-slate-100 border-slate-300 text-slate-700',      dotBg: 'bg-slate-500',   color: '#94A3B8' },
-    'ปิดเครน':           { badge: 'bg-purple-100 text-purple-800',   dot: 'text-purple-500',  card: 'bg-purple-50 border-purple-200 text-purple-900',    dotBg: 'bg-purple-500',  color: '#A855F7' }
-};
+    const CONFIG_TIME_SLOTS = [
+      "08:00 - 09:00 น.", "09:00 - 10:00 น.", "10:00 - 11:00 น.", "11:00 - 12:00 น.",
+      "12:00 - 13:00 น.", "13:00 - 14:00 น.", "14:00 - 15:00 น.", "15:00 - 16:00 น.",
+      "16:00 - 17:00 น.", "17:00 - 18:00 น.", "18:00 - 19:00 น.", "19:00 - 20:00 น."
+    ];
 
-let reportsData = [];
-let selectedDailyFilter = 'ALL';
-let targetDeleteId = null;
-let images = { scale: null, crane: null };
-let doughnutChart = null;
-let lineChart = null;
-let toastTimer = null;
-let dashboardFilterTouched = false;
+    // Mock Backend Runner for Standalone/Preview Environment Mode
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      window.google = window.google || {};
+      window.google.script = window.google.script || {};
+      
+      const sampleMockRecords = generateSampleRecords();
 
-// ---------- Helpers ----------
-const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const setText = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
-const parseStatuses = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
-const hasAny = (r, list) => parseStatuses(r.status).some(s => list.includes(s));
-const sortKey = r => `${r.isoDate || ''} ${r.timeSlot || ''}`;
+      window.google.script.run = {
+        withSuccessHandler: function(callback) {
+          this._success = callback;
+          return this;
+        },
+        withFailureHandler: function(callback) {
+          this._failure = callback;
+          return this;
+        },
+        getDashboardData: function() {
+          setTimeout(() => {
+            if (this._success) this._success({
+              success: true,
+              records: sampleMockRecords,
+              config: {
+                stations: CONFIG_STATIONS,
+                timeSlots: CONFIG_TIME_SLOTS,
+                productionYear: "2569-70"
+              }
+            });
+          }, 300);
+        },
+        saveRecord: function(payload) {
+          setTimeout(() => {
+            const newRecord = {
+              id: 'rec_' + Date.now(),
+              dateStr: payload.dateStr,
+              dateIso: payload.dateIso,
+              timeSlot: payload.timeSlot,
+              station: payload.station,
+              status: payload.status,
+              scaleImgUrl: payload.scaleImgBase64 || '',
+              craneImgUrl: payload.craneImgBase64 || '',
+              createdAt: new Date().toISOString()
+            };
+            sampleMockRecords.unshift(newRecord);
+            if (this._success) this._success({ success: true, message: "บันทึกข้อมูลสำเร็จ (โหมดจำลอง)" });
+          }, 400);
+        },
+        updateRecord: function(payload) {
+          setTimeout(() => {
+            const idx = sampleMockRecords.findIndex(r => r.id === payload.id);
+            if (idx !== -1) {
+              sampleMockRecords[idx].dateStr = payload.dateStr;
+              sampleMockRecords[idx].dateIso = payload.dateIso;
+              sampleMockRecords[idx].station = payload.station;
+              sampleMockRecords[idx].timeSlot = payload.timeSlot;
+              sampleMockRecords[idx].status = payload.status;
+              if (payload.scaleImgBase64) sampleMockRecords[idx].scaleImgUrl = payload.scaleImgBase64;
+              if (payload.craneImgBase64) sampleMockRecords[idx].craneImgUrl = payload.craneImgBase64;
+            }
+            if (this._success) this._success({ success: true, message: "แก้ไขข้อมูลสำเร็จ (โหมดจำลอง)" });
+          }, 400);
+        },
+        deleteRecord: function(id) {
+          setTimeout(() => {
+            const idx = sampleMockRecords.findIndex(r => r.id === id);
+            if (idx !== -1) sampleMockRecords.splice(idx, 1);
+            if (this._success) this._success({ success: true, message: "ลบข้อมูลเรียบร้อยแล้ว" });
+          }, 300);
+        },
+        deleteImage: function(id, type) {
+          setTimeout(() => {
+            const rec = sampleMockRecords.find(r => r.id === id);
+            if (rec) {
+              if (type === 'scale') rec.scaleImgUrl = '';
+              else rec.craneImgUrl = '';
+            }
+            if (this._success) this._success({ success: true, message: "ลบรูปภาพเรียบร้อยแล้ว" });
+          }, 300);
+        },
+        replaceImage: function(id, type, base64) {
+          setTimeout(() => {
+            const rec = sampleMockRecords.find(r => r.id === id);
+            if (rec) {
+              if (type === 'scale') rec.scaleImgUrl = base64;
+              else rec.craneImgUrl = base64;
+            }
+            if (this._success) this._success({ success: true, message: "อัปโหลดรูปภาพใหม่สำเร็จ", url: base64 });
+          }, 400);
+        }
+      };
+    }
 
-function getThaiDateString(isoDateVal) {
-    if (!isoDateVal) return '-';
-    const parts = isoDateVal.split('-');
-    if (parts.length !== 3) return isoDateVal;
-    return `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
-}
-
-function toLocalIsoDate(v) {
-    if (!v) return '';
-    const s = String(v).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    const d = new Date(s);
-    if (isNaN(d)) return '';
-    const p = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-function thaiToIso(t) {
-    const m = String(t || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    return m ? `${parseInt(m[3]) - 543}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
-}
-
-// Make every record (local or from backend) have the same shape
-function normalizeRecord(r) {
-    const rec = { ...r };
-    rec.id = String(rec.id ?? ('REP-' + Date.now() + Math.random().toString(36).slice(2, 6)));
-    rec.station = String(rec.station || '').trim();
-    rec.status = Array.isArray(rec.status) ? rec.status.join(', ') : String(rec.status || '');
-    rec.timeSlot = String(rec.timeSlot || '').trim();
-    rec.isoDate = toLocalIsoDate(rec.isoDate) || thaiToIso(rec.thaiDate);
-    rec.thaiDate = rec.isoDate ? getThaiDateString(rec.isoDate) : (rec.thaiDate || '');
-    return rec;
-}
-
-// Latest record of each station (by date + time slot)
-function getLatestByStation(data) {
-    const map = {};
-    [...data].sort((a, b) => sortKey(a).localeCompare(sortKey(b))).forEach(r => { map[r.station] = r; });
-    return map;
-}
-
-// Convert various Google Drive URLs to a direct thumbnail link
-function formatImageUrl(url) {
-    if (!url || url === '-') return null;
-    if (url.startsWith('data:image')) return url;
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-    return match && match[1] ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
-}
-
-function getApiUrl() {
-    return localStorage.getItem('rsc_web_app_url') || DEFAULT_WEB_APP_URL;
-}
-
-// ---------- Init ----------
-window.onload = function () {
-    initHeaderDate();
-    populateStationsDropdown();
-    setDefaultDate();
-    loadStoredApiUrl();
-    loadLocalData();
-    populateDailyFilterOptions();
-    renderDataTable();
-    try { initCharts(); } catch (e) { console.warn('Chart init failed:', e); }
-    updateDashboard();
-    loadDataFromBackend();
-};
-
-function initHeaderDate() {
-    const t = new Date();
-    setText('currentDateDisplay', `${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}/${t.getFullYear() + 543}`);
-}
-
-function populateStationsDropdown() {
-    const select = document.getElementById('stationSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="" disabled selected>-- เลือกสถานีขนถ่าย (43 สถานี) --</option>' +
-        STATIONS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-}
-
-function setDefaultDate() {
-    const t = new Date();
-    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    const input = document.getElementById('reportDate');
-    if (input) { input.value = iso; updateThaiDateDisplay(iso); }
-}
-
-function updateThaiDateDisplay(isoDateVal) {
-    setText('thaiDatePreview', isoDateVal ? `รูปแบบ: ${getThaiDateString(isoDateVal)}` : 'รูปแบบ: -');
-}
-
-// ---------- Toast / Loading ----------
-function showToast(message, type = 'success') {
-    const toast = document.getElementById('toastNotification');
-    const icon = document.getElementById('toastIcon');
-    const msg = document.getElementById('toastMessage');
-    if (!toast) return;
-    const styles = {
-        success: ['✓', 'text-emerald-400'],
-        error: ['✕', 'text-rose-400'],
-        info: ['i', 'text-sky-400']
-    };
-    const [ic, col] = styles[type] || styles.info;
-    icon.className = `${col} text-lg font-bold`;
-    icon.textContent = ic;
-    msg.textContent = message;
-    toast.classList.remove('translate-y-20', 'opacity-0');
-    toast.classList.add('translate-y-0', 'opacity-100');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-20', 'opacity-0');
-    }, 3500);
-}
-
-function showLoading(show) {
-    document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
-}
-
-// ---------- Images ----------
-function setImage(type, src) {
-    images[type] = src || null;
-    document.getElementById(`${type}ImagePreview`).src = formatImageUrl(src) || '';
-    document.getElementById(`${type}PreviewContainer`).classList.toggle('hidden', !src);
-    document.getElementById(`${type}UploadArea`).classList.toggle('hidden', !!src);
-}
-
-function handleImageSelect(event, type) {
-    const file = event.target.files[0];
-    if (!file) return;
-    compressAndResizeImage(file, 800, 0.7, base64 => setImage(type, base64));
-}
-
-function removeImage(type) {
-    document.getElementById(`${type}ImageInput`).value = '';
-    setImage(type, null);
-}
-
-function downloadImage(type) {
-    const data = formatImageUrl(images[type]);
-    if (!data) return;
-    const link = document.createElement('a');
-    link.href = data;
-    link.download = `${type}_station_photo.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function compressAndResizeImage(file, maxWidth, quality, callback) {
-    const reader = new FileReader();
-    reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-            let w = img.width, h = img.height;
-            if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            callback(canvas.toDataURL('image/jpeg', quality));
+    function generateSampleRecords() {
+      const records = [];
+      const today = new Date();
+      
+      for (let i = 0; i < 20; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - (i % 5));
+        const iso = d.toISOString().split("T")[0];
+        const yr = d.getFullYear() + 543;
+        const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${yr}`;
+        
+        const st = CONFIG_STATIONS[i % CONFIG_STATIONS.length];
+        const ts = CONFIG_TIME_SLOTS[i % CONFIG_TIME_SLOTS.length];
+        
+        const typeRand = i % 5;
+        const status = {
+          normal: typeRand === 0,
+          waitingTruck: typeRand === 1,
+          waitingCane: typeRand === 2,
+          unknown: typeRand === 3,
+          offline: typeRand === 4,
+          craneClosed: false
         };
-        img.onerror = () => showToast('ไม่สามารถอ่านไฟล์รูปภาพนี้ได้', 'error');
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
 
-function openPhotoModal(title, imageSrc) {
-    setText('photoModalTitle', title);
-    document.getElementById('photoModalImg').src = imageSrc;
-    document.getElementById('photoModalDownloadBtn').href = imageSrc;
-    document.getElementById('photoModal').classList.remove('hidden');
-}
-
-function closePhotoModal() {
-    document.getElementById('photoModal').classList.add('hidden');
-}
-
-function handleImgError(img) {
-    img.onerror = null;
-    img.outerHTML = placeholderHtml('โหลดรูปไม่สำเร็จ', 'fa-image');
-}
-
-function placeholderHtml(text, icon) {
-    return `<div style="width:5cm;height:5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs"><span>${text}</span></div>`;
-}
-
-// ---------- Form ----------
-function limitStatusSelection(checkbox) {
-    if (document.querySelectorAll('input[name="stationStatus"]:checked').length > 2) {
-        checkbox.checked = false;
-        showToast('สามารถเลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
-    }
-}
-
-function resetForm() {
-    document.getElementById('reportForm').reset();
-    document.getElementById('editRowId').value = '';
-    setText('formTitleText', 'แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย');
-    setText('submitBtnText', 'บันทึกข้อมูลรายงาน');
-    document.querySelectorAll('input[name="stationStatus"]').forEach(cb => { cb.checked = (cb.value === 'ปกติ'); });
-    removeImage('scale');
-    removeImage('crane');
-    setDefaultDate();
-}
-
-function editRecord(id) {
-    const item = reportsData.find(r => r.id === String(id));
-    if (!item) return;
-
-    switchTab('form');
-    document.getElementById('editRowId').value = item.id;
-    setText('formTitleText', `แก้ไขข้อมูลรายงาน (${item.station})`);
-    setText('submitBtnText', 'อัปเดตข้อมูลรายงาน');
-
-    document.getElementById('stationSelect').value = item.station;
-    if (item.isoDate) {
-        document.getElementById('reportDate').value = item.isoDate;
-        updateThaiDateDisplay(item.isoDate);
-    }
-    document.getElementById('timeSlot').value = item.timeSlot;
-    document.getElementById('noteInput').value = item.note || '';
-
-    const sts = parseStatuses(item.status);
-    document.querySelectorAll('input[name="stationStatus"]').forEach(cb => { cb.checked = sts.includes(cb.value); });
-
-    setImage('scale', item.scaleImage);
-    setImage('crane', item.craneImage);
-}
-
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    const selected = Array.from(document.querySelectorAll('input[name="stationStatus"]:checked'));
-    if (selected.length === 0) return showToast('กรุณาเลือกสถานะการทำงานอย่างน้อย 1 อย่าง', 'error');
-    if (selected.length > 2) return showToast('เลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
-
-    const editId = document.getElementById('editRowId').value;
-    const isoDate = document.getElementById('reportDate').value;
-
-    const record = {
-        id: editId || 'REP-' + Date.now(),
-        timestamp: new Date().toLocaleString('th-TH'),
-        station: document.getElementById('stationSelect').value,
-        isoDate: isoDate,
-        thaiDate: getThaiDateString(isoDate),
-        timeSlot: document.getElementById('timeSlot').value,
-        status: selected.map(el => el.value).join(', '),
-        scaleImage: images.scale,
-        craneImage: images.crane,
-        note: document.getElementById('noteInput').value.trim()
-    };
-
-    if (editId) {
-        const idx = reportsData.findIndex(r => r.id === editId);
-        if (idx !== -1) reportsData[idx] = record; else reportsData.unshift(record);
-    } else {
-        reportsData.unshift(record);
-    }
-
-    saveLocalData();
-    populateDailyFilterOptions();
-    sendToGoogleAppsScript(getApiUrl(), record);
-
-    resetForm();
-    renderDataTable();
-    updateDashboard();
-    showToast(editId ? 'อัปเดตข้อมูลรายงานเรียบร้อยแล้ว' : 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
-}
-
-// ---------- Filters ----------
-function populateDailyFilterOptions() {
-    const dateMap = new Map(reportsData.filter(r => r.thaiDate).map(r => [r.thaiDate, r.isoDate || '']));
-    const dates = [...dateMap.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(e => e[0]);
-
-    // Dashboard เริ่มต้นที่ "วันที่ล่าสุดที่มีรายงาน" จนกว่าผู้ใช้จะเลือกเอง
-    if (!dashboardFilterTouched && dates.length) selectedDailyFilter = dates[0];
-
-    [['dailyFilterSelect', '-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --', selectedDailyFilter],
-     ['tableDateFilter', '-- ทุกวันที่ --', null]].forEach(([id, label, keep]) => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const cur = keep ?? sel.value ?? 'ALL';
-        sel.innerHTML = `<option value="ALL">${label}</option>` +
-            dates.map(d => `<option value="${escapeHtml(d)}">วันที่ ${escapeHtml(d)}</option>`).join('');
-        sel.value = dates.includes(cur) ? cur : 'ALL';
-    });
-    selectedDailyFilter = document.getElementById('dailyFilterSelect').value;
-}
-
-function handleDailyFilterChange(val) {
-    dashboardFilterTouched = true;
-    selectedDailyFilter = val;
-    updateDashboard();
-}
-
-function getFilteredReports() {
-    return selectedDailyFilter === 'ALL' ? reportsData : reportsData.filter(r => r.thaiDate === selectedDailyFilter);
-}
-
-// ---------- Table ----------
-function getSingleBadgeHtml(status) {
-    const st = STATUS_STYLE[status];
-    if (!st) return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${escapeHtml(status)}</span>`;
-    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${st.badge}"><span class="w-1.5 h-1.5 rounded-full ${st.dotBg}"></span> ${status}</span>`;
-}
-
-function getStatusBadge(status) {
-    const parts = parseStatuses(status);
-    if (!parts.length) return '-';
-    return `<div class="flex flex-wrap gap-1">${parts.map(getSingleBadgeHtml).join('')}</div>`;
-}
-
-function imageCell(src, label, station, icon, border) {
-    const body = src
-        ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(label + ' - ' + station)}" style="width:5cm;height:5cm;" onclick="openPhotoModal(this.alt, this.src)" onerror="handleImgError(this)" class="object-cover rounded-xl border ${border} shadow-sm cursor-pointer hover:opacity-90 transition-all">`
-        : placeholderHtml('ไม่มีรูป', icon);
-    return `<div class="flex flex-col items-center"><span class="text-[10px] text-slate-400 mb-1 font-medium">${label}</span>${body}</div>`;
-}
-
-function renderDataTable() {
-    const tbody = document.getElementById('dataTableBody');
-    if (!tbody) return;
-
-    const keyword = (document.getElementById('searchInput')?.value || '').toLowerCase();
-    const dateVal = document.getElementById('tableDateFilter')?.value || 'ALL';
-    const slotVal = document.getElementById('tableTimeSlotFilter')?.value || 'ALL';
-
-    const filtered = reportsData
-        .filter(r =>
-            (dateVal === 'ALL' || r.thaiDate === dateVal) &&
-            (slotVal === 'ALL' || r.timeSlot === slotVal) &&
-            (!keyword || [r.station, r.status, r.note].some(v => String(v || '').toLowerCase().includes(keyword))))
-        .sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
-
-    if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-light">ไม่พบข้อมูลรายการที่เลือก</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = filtered.map(item => `
-        <tr class="hover:bg-emerald-50/40 transition-colors border-b border-slate-100">
-            <td class="py-3 px-4 font-medium text-slate-700 whitespace-nowrap">
-                ${escapeHtml(item.thaiDate || '-')}<br>
-                <span class="text-[10px] text-slate-400">${escapeHtml(item.timestamp || '')}</span>
-            </td>
-            <td class="py-3 px-4 font-semibold text-emerald-900 whitespace-nowrap">${escapeHtml(item.station)}</td>
-            <td class="py-3 px-4 whitespace-nowrap text-slate-600">${escapeHtml(item.timeSlot)}</td>
-            <td class="py-3 px-4 whitespace-nowrap">${getStatusBadge(item.status)}</td>
-            <td class="py-3 px-4 text-center">
-                <div class="flex items-center justify-center gap-3">
-                    ${imageCell(formatImageUrl(item.scaleImage), 'รูปตาชั่ง', item.station, 'fa-weight-scale', 'border-emerald-200')}
-                    ${imageCell(formatImageUrl(item.craneImage), 'รูปเครน', item.station, 'fa-tower-observation', 'border-teal-200')}
-                </div>
-            </td>
-            <td class="py-3 px-4 max-w-xs truncate text-slate-500" title="${escapeHtml(item.note || '')}">${escapeHtml(item.note || '-')}</td>
-            <td class="py-3 px-4 text-center whitespace-nowrap">
-                <div class="flex items-center justify-center gap-1">
-                    <button onclick="editRecord('${escapeHtml(item.id)}')" class="px-2 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข">แก้ไข</button>
-                    <button onclick="promptDeleteRecord('${escapeHtml(item.id)}')" class="px-2 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ">ลบ</button>
-                </div>
-            </td>
-        </tr>`).join('');
-}
-
-// ---------- Delete ----------
-function promptDeleteRecord(id) {
-    targetDeleteId = String(id);
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    targetDeleteId = null;
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-
-function confirmDeleteRecord() {
-    if (!targetDeleteId) return;
-    const id = targetDeleteId;
-    closeDeleteModal();
-
-    sendToGoogleAppsScript(getApiUrl(), { action: 'delete', id: id });
-    reportsData = reportsData.filter(r => r.id !== id);
-    saveLocalData();
-    populateDailyFilterOptions();
-    renderDataTable();
-    updateDashboard();
-    showToast('ลบข้อมูลรายการเรียบร้อยแล้ว', 'info');
-}
-
-// ---------- Tabs ----------
-function switchTab(tab) {
-    const base = 'py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg ';
-    const active = base + 'border-emerald-300 text-white bg-white/10';
-    const inactive = base + 'border-transparent text-emerald-100 hover:text-white hover:bg-white/5';
-
-    ['form', 'dashboard', 'table'].forEach(t => {
-        document.getElementById(`tab-btn-${t}`).className = (t === tab) ? active : inactive;
-        document.getElementById(`tab-${t}-content`).classList.toggle('hidden', t !== tab);
-    });
-
-    if (tab === 'dashboard') {
-        updateDashboard();
-        if (doughnutChart) doughnutChart.resize();
-        if (lineChart) lineChart.resize();
-    } else if (tab === 'table') {
-        renderDataTable();
-    }
-}
-
-// ---------- Dashboard ----------
-function updateDashboard() {
-    const data = getFilteredReports();
-    const latestMap = getLatestByStation(data);
-    const latest = Object.values(latestMap).filter(r => STATIONS.includes(r.station));
-    const noReport = STATIONS.length - latest.length;
-
-    setText('kpiTotalReports', data.length);
-    setText('kpiNormalCount', latest.filter(r => hasAny(r, ['ปกติ'])).length);
-    setText('kpiIssueCount', latest.filter(r => hasAny(r, ISSUE_STATUSES)).length);
-    setText('kpiOfflineCount', latest.filter(r => hasAny(r, OFFLINE_STATUSES)).length);
-
-    // โดนัท: นับตามสถานะล่าสุดของแต่ละสถานี + สถานีที่ยังไม่มีรายงาน (ตรงกับการ์ด KPI และตาราง 43 สถานี)
-    if (doughnutChart) {
-        const counts = STATUS_LIST.map(s => latest.filter(r => parseStatuses(r.status).includes(s)).length);
-        doughnutChart.data.datasets[0].data = [...counts, noReport];
-        doughnutChart.update();
-    }
-
-    if (lineChart) {
-        STATUS_LIST.forEach((st, i) => {
-            lineChart.data.datasets[i].data = TIME_SLOTS.map(slot =>
-                data.filter(r => r.timeSlot === slot && parseStatuses(r.status).includes(st)).length);
+        records.push({
+          id: 'demo_' + (i + 1),
+          dateStr: dateStr,
+          dateIso: iso,
+          timeSlot: ts,
+          station: st,
+          status: status,
+          scaleImgUrl: 'https://picsum.photos/200/200?random=' + (i*2 + 1),
+          craneImgUrl: 'https://picsum.photos/200/200?random=' + (i*2 + 2),
+          createdAt: new Date().toISOString()
         });
-        lineChart.update();
+      }
+      return records;
     }
 
-    renderStationsGrid(latestMap);
-}
+    // Global Application State
+    let masterRecords = [];
+    let masterStations = [];
+    let masterTimeSlots = [];
+    
+    // Pagination State
+    let currentPage = 1;
+    let pageSize = 25;
+    let filteredRecords = [];
 
-function initCharts() {
-    if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded'); return; }
-    const colors = STATUS_LIST.map(s => STATUS_STYLE[s].color);
+    // Form Temporary Stores
+    let tempScaleBase64 = null;
+    let tempCraneBase64 = null;
+    let pendingPayload = null;
 
-    doughnutChart = new Chart(document.getElementById('statusDoughnutChart').getContext('2d'), {
+    // Image Viewer Modal Context
+    let currentImageContext = { recordId: null, imageType: null };
+
+    // Chart Instances
+    let chartPieInstance = null;
+    let chartLineInstance = null;
+    let chartBarInstance = null;
+
+    // Application Lifecycle Initialization
+    document.addEventListener("DOMContentLoaded", () => {
+      const todayIso = new Date().toISOString().split("T")[0];
+      document.getElementById("formDateIso").value = todayIso;
+      handleDateChange();
+
+      loadAllData();
+    });
+
+    // SPA Navigation Tab Switching
+    function switchTab(tabName) {
+      document.getElementById("pageDashboard").classList.add("d-none");
+      document.getElementById("pageRecord").classList.add("d-none");
+      document.getElementById("pageTable").classList.add("d-none");
+
+      const navLinks = document.querySelectorAll(".nav-link");
+      navLinks.forEach(el => el.classList.remove("active"));
+
+      if (tabName === 'dashboard') {
+        document.getElementById("pageDashboard").classList.remove("d-none");
+        navLinks[0].classList.add("active");
+        renderDashboard();
+      } else if (tabName === 'record') {
+        document.getElementById("pageRecord").classList.remove("d-none");
+        navLinks[1].classList.add("active");
+      } else if (tabName === 'table') {
+        document.getElementById("pageTable").classList.remove("d-none");
+        navLinks[2].classList.add("active");
+        filterAndRenderTable();
+      }
+    }
+
+    // UI Loading Controller
+    function showLoading(msg = "กำลังโหลดข้อมูล...") {
+      document.getElementById("loadingText").innerText = msg;
+      document.getElementById("loadingOverlay").classList.remove("d-none");
+    }
+
+    function hideLoading() {
+      document.getElementById("loadingOverlay").classList.add("d-none");
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const container = document.getElementById("toastContainer");
+      const toastId = 'toast_' + Date.now();
+      const bgClass = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : 'bg-warning');
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+      const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0 show" role="alert">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="fa-solid ${icon} me-2"></i>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', toastHtml);
+      setTimeout(() => {
+        const elem = document.getElementById(toastId);
+        if (elem) elem.remove();
+      }, 4000);
+    }
+
+    // Fetch Master Data
+    function loadAllData() {
+      showLoading("กำลังโหลดข้อมูลจากระบบ...");
+      google.script.run
+        .withSuccessHandler(response => {
+          hideLoading();
+          if (response.success) {
+            masterRecords = response.records || [];
+            masterStations = response.config.stations || CONFIG_STATIONS;
+            masterTimeSlots = response.config.timeSlots || CONFIG_TIME_SLOTS;
+
+            populateDropdowns();
+            renderDashboard();
+            filterAndRenderTable();
+          } else {
+            showToast("เกิดข้อผิดพลาด: " + response.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          hideLoading();
+          showToast("การเชื่อมต่อล้มเหลว: " + err.toString(), 'error');
+        })
+        .getDashboardData();
+    }
+
+    // Populate Dynamic Select Elements
+    function populateDropdowns() {
+      const formStation = document.getElementById("formStation");
+      formStation.innerHTML = '<option value="">-- เลือกสถานีขนถ่าย --</option>';
+      masterStations.forEach(st => formStation.add(new Option(st, st)));
+
+      const formTime = document.getElementById("formTimeSlot");
+      formTime.innerHTML = '<option value="">-- เลือกช่วงเวลา --</option>';
+      masterTimeSlots.forEach(ts => formTime.add(new Option(ts, ts)));
+
+      const dashStation = document.getElementById("dashFilterStation");
+      dashStation.innerHTML = '<option value="">ทุกสถานี (43 สถานี)</option>';
+      masterStations.forEach(st => dashStation.add(new Option(st, st)));
+
+      const dashTime = document.getElementById("dashFilterTime");
+      dashTime.innerHTML = '<option value="">ทั้งหมด</option>';
+      masterTimeSlots.forEach(ts => dashTime.add(new Option(ts, ts)));
+
+      const tblStation = document.getElementById("tblFilterStation");
+      tblStation.innerHTML = '<option value="">ทุกสถานีขนถ่าย</option>';
+      masterStations.forEach(st => tblStation.add(new Option(st, st)));
+
+      const tblTime = document.getElementById("tblFilterTime");
+      tblTime.innerHTML = '<option value="">ทุกช่วงเวลา</option>';
+      masterTimeSlots.forEach(ts => tblTime.add(new Option(ts, ts)));
+    }
+
+    // Thai Date String Formatting (ค.ศ. -> พ.ศ.)
+    function formatThaiDate(isoDateStr) {
+      if (!isoDateStr) return "";
+      const parts = isoDateStr.split("-");
+      if (parts.length !== 3) return isoDateStr;
+      const yearTH = parseInt(parts[0], 10) + 543;
+      return `${parts[2]}/${parts[1]}/${yearTH}`;
+    }
+
+    function handleDateChange() {
+      const isoVal = document.getElementById("formDateIso").value;
+      const thaiVal = formatThaiDate(isoVal);
+      document.getElementById("formThaiDateShow").innerText = thaiVal ? `วันที่ไทย: ${thaiVal}` : "";
+    }
+
+    // Checkbox Mutex Logic for "ปกติ"
+    function handleStatusChange(changedKey) {
+      if (!ALLOW_NORMAL_WITH_OTHER_STATUS) {
+        const stNormal = document.getElementById("stNormal");
+        if (changedKey === 'normal' && stNormal.checked) {
+          document.getElementById("stWaitingTruck").checked = false;
+          document.getElementById("stWaitingCane").checked = false;
+          document.getElementById("stUnknown").checked = false;
+          document.getElementById("stOffline").checked = false;
+          document.getElementById("stCraneClosed").checked = false;
+        } else if (changedKey !== 'normal') {
+          const isAnyOtherChecked = 
+            document.getElementById("stWaitingTruck").checked ||
+            document.getElementById("stWaitingCane").checked ||
+            document.getElementById("stUnknown").checked ||
+            document.getElementById("stOffline").checked ||
+            document.getElementById("stCraneClosed").checked;
+          if (isAnyOtherChecked) {
+            stNormal.checked = false;
+          }
+        }
+      }
+    }
+
+    // Base64 File Converter
+    function handleFileSelect(event, type) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("ขนาดไฟล์ต้องไม่เกิน 10 MB", 'error');
+        event.target.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        if (type === 'Scale') {
+          tempScaleBase64 = base64;
+          document.getElementById("previewScaleImg").src = base64;
+          document.getElementById("previewScaleImg").classList.remove("d-none");
+          document.getElementById("previewScalePlaceholder").classList.add("d-none");
+          document.getElementById("btnRemoveScale").classList.remove("d-none");
+        } else {
+          tempCraneBase64 = base64;
+          document.getElementById("previewCraneImg").src = base64;
+          document.getElementById("previewCraneImg").classList.remove("d-none");
+          document.getElementById("previewCranePlaceholder").classList.add("d-none");
+          document.getElementById("btnRemoveCrane").classList.remove("d-none");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeImageSelection(type) {
+      if (type === 'Scale') {
+        tempScaleBase64 = null;
+        document.getElementById("fileScale").value = "";
+        document.getElementById("previewScaleImg").src = "";
+        document.getElementById("previewScaleImg").classList.add("d-none");
+        document.getElementById("previewScalePlaceholder").classList.remove("d-none");
+        document.getElementById("btnRemoveScale").classList.add("d-none");
+      } else {
+        tempCraneBase64 = null;
+        document.getElementById("fileCrane").value = "";
+        document.getElementById("previewCraneImg").src = "";
+        document.getElementById("previewCraneImg").classList.add("d-none");
+        document.getElementById("previewCranePlaceholder").classList.remove("d-none");
+        document.getElementById("btnRemoveCrane").classList.add("d-none");
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("recordForm").reset();
+      document.getElementById("editRecordId").value = "";
+      removeImageSelection('Scale');
+      removeImageSelection('Crane');
+      const todayIso = new Date().toISOString().split("T")[0];
+      document.getElementById("formDateIso").value = todayIso;
+      handleDateChange();
+    }
+
+    // Form Submission Handler
+    function handleFormSubmit(event) {
+      event.preventDefault();
+
+      const editId = document.getElementById("editRecordId").value;
+      const dateIso = document.getElementById("formDateIso").value;
+      const dateStr = formatThaiDate(dateIso);
+      const station = document.getElementById("formStation").value;
+      const timeSlot = document.getElementById("formTimeSlot").value;
+
+      const status = {
+        normal: document.getElementById("stNormal").checked,
+        waitingTruck: document.getElementById("stWaitingTruck").checked,
+        waitingCane: document.getElementById("stWaitingCane").checked,
+        unknown: document.getElementById("stUnknown").checked,
+        offline: document.getElementById("stOffline").checked,
+        craneClosed: document.getElementById("stCraneClosed").checked
+      };
+
+      const hasStatus = Object.values(status).some(v => v === true);
+      if (!hasStatus) {
+        showToast("กรุณาเลือกสถานการณ์อย่างน้อย 1 รายการ", 'error');
+        return;
+      }
+
+      pendingPayload = {
+        id: editId || null,
+        dateIso: dateIso,
+        dateStr: dateStr,
+        station: station,
+        timeSlot: timeSlot,
+        status: status,
+        scaleImgBase64: tempScaleBase64,
+        craneImgBase64: tempCraneBase64,
+        forceOverwrite: false
+      };
+
+      if (editId) {
+        submitRecordToBackend(pendingPayload, "กำลังแก้ไขข้อมูล...");
+      } else {
+        submitRecordToBackend(pendingPayload, "กำลังบันทึกข้อมูล...");
+      }
+    }
+
+    function submitRecordToBackend(payload, loadingMsg) {
+      showLoading(loadingMsg);
+      const runner = payload.id ? google.script.run.updateRecord(payload) : google.script.run.saveRecord(payload);
+
+      runner
+        .withSuccessHandler(res => {
+          hideLoading();
+          if (res.success) {
+            showToast(res.message, 'success');
+            resetForm();
+            loadAllData();
+            switchTab('table');
+          } else if (res.isDuplicate) {
+            document.getElementById("modalDuplicateMsg").innerText = `${res.message} (วันที่ ${payload.dateStr} | สถานี ${payload.station} | เวลา ${payload.timeSlot})`;
+            const modal = new bootstrap.Modal(document.getElementById("modalDuplicate"));
+            modal.show();
+          } else {
+            showToast("ข้อผิดพลาด: " + res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          hideLoading();
+          showToast("ระบบขัดข้อง: " + err.toString(), 'error');
+        });
+    }
+
+    function proceedOverwrite() {
+      const modalElem = document.getElementById("modalDuplicate");
+      const modal = bootstrap.Modal.getInstance(modalElem);
+      if (modal) modal.hide();
+
+      if (pendingPayload) {
+        pendingPayload.forceOverwrite = true;
+        submitRecordToBackend(pendingPayload, "กำลังปรับปรุงข้อมูล...");
+      }
+    }
+
+
+    // DASHBOARD ENGINE & CHART RENDERING
+    function renderDashboard() {
+      const summaryType = document.getElementById("dashSummaryType").value;
+      const filterDate = document.getElementById("dashFilterDate").value;
+      const filterTime = document.getElementById("dashFilterTime").value;
+      const filterStation = document.getElementById("dashFilterStation").value;
+      const filterStatus = document.getElementById("dashFilterStatus").value;
+
+      // Filter Data
+      let dataset = masterRecords.filter(row => {
+        if (filterDate && row.dateIso !== filterDate) return false;
+        if (filterTime && row.timeSlot !== filterTime) return false;
+        if (filterStation && row.station !== filterStation) return false;
+
+        if (filterStatus) {
+          if (!row.status[filterStatus]) return false;
+        }
+        return true;
+      });
+
+      // Calculate Counters
+      let kpiTotal = dataset.length;
+      let kpiNormal = 0, kpiTruck = 0, kpiCane = 0, kpiUnknown = 0, kpiOffline = 0, kpiCrane = 0;
+
+      dataset.forEach(row => {
+        if (row.status.normal) kpiNormal++;
+        if (row.status.waitingTruck) kpiTruck++;
+        if (row.status.waitingCane) kpiCane++;
+        if (row.status.unknown) kpiUnknown++;
+        if (row.status.offline) kpiOffline++;
+        if (row.status.craneClosed) kpiCrane++;
+      });
+
+      // Update KPI UI
+      document.getElementById("kpiTotalRecords").innerText = kpiTotal;
+      document.getElementById("kpiNormal").innerText = kpiNormal;
+      document.getElementById("kpiTruck").innerText = kpiTruck;
+      document.getElementById("kpiCane").innerText = kpiCane;
+      document.getElementById("kpiUnknown").innerText = kpiUnknown;
+      document.getElementById("kpiOfflineCrane").innerText = (kpiOffline + kpiCrane);
+
+      renderPieChart(kpiNormal, kpiTruck, kpiCane, kpiUnknown, kpiOffline, kpiCrane);
+      renderLineChart(dataset, summaryType);
+      renderBarChart(dataset, filterStation);
+      renderDashboardSummaryTable(dataset, summaryType);
+    }
+
+    function renderPieChart(normal, truck, cane, unknown, offline, crane) {
+      const ctx = document.getElementById('chartPie').getContext('2d');
+      if (chartPieInstance) chartPieInstance.destroy();
+
+      chartPieInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: [...STATUS_LIST, 'ยังไม่มีรายงาน'],
-            datasets: [{ data: [...STATUS_LIST.map(() => 0), 0], backgroundColor: [...colors, '#E2E8F0'], borderWidth: 2, borderColor: '#ffffff' }]
+          labels: ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'ไม่ทราบสาเหตุ', 'Offline', 'ปิดเครน'],
+          datasets: [{
+            data: [normal, truck, cane, unknown, offline, crane],
+            backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#6b7280', '#4b5563']
+          }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '68%',
-            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Prompt', size: 11 }, boxWidth: 10, padding: 8 } } }
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Sarabun', size: 11 } } }
+          }
         }
-    });
+      });
+    }
 
-    lineChart = new Chart(document.getElementById('hourlyLineChart').getContext('2d'), {
+    function renderLineChart(dataset, summaryType) {
+      const ctx = document.getElementById('chartLine').getContext('2d');
+      if (chartLineInstance) chartLineInstance.destroy();
+
+      let labels = [];
+      let mapData = {};
+
+      if (summaryType === 'hourly') {
+        labels = [...masterTimeSlots];
+        labels.forEach(l => mapData[l] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
+        dataset.forEach(r => {
+          if (mapData[r.timeSlot]) {
+            if (r.status.normal) mapData[r.timeSlot].normal++;
+            if (r.status.waitingTruck) mapData[r.timeSlot].truck++;
+            if (r.status.waitingCane) mapData[r.timeSlot].cane++;
+            if (r.status.unknown) mapData[r.timeSlot].unknown++;
+            if (r.status.offline) mapData[r.timeSlot].offline++;
+            if (r.status.craneClosed) mapData[r.timeSlot].crane++;
+          }
+        });
+      } else {
+        const uniqueDates = [...new Set(dataset.map(r => r.dateIso))].sort();
+        labels = uniqueDates.length > 0 ? uniqueDates.map(d => formatThaiDate(d)) : ["ไม่มีข้อมูล"];
+        uniqueDates.forEach(d => mapData[formatThaiDate(d)] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
+
+        dataset.forEach(r => {
+          const key = formatThaiDate(r.dateIso);
+          if (mapData[key]) {
+            if (r.status.normal) mapData[key].normal++;
+            if (r.status.waitingTruck) mapData[key].truck++;
+            if (r.status.waitingCane) mapData[key].cane++;
+            if (r.status.unknown) mapData[key].unknown++;
+            if (r.status.offline) mapData[key].offline++;
+            if (r.status.craneClosed) mapData[key].crane++;
+          }
+        });
+      }
+
+      chartLineInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: TIME_SLOTS.map(s => s.slice(0, 5)),
-            datasets: STATUS_LIST.map((s, i) => ({
-                label: s, data: [], borderColor: colors[i], backgroundColor: colors[i], borderWidth: 2, tension: 0.3, pointRadius: 3
-            }))
+          labels: labels,
+          datasets: [
+            { label: 'ปกติ', data: labels.map(l => mapData[l]?.normal || 0), borderColor: '#10b981', tension: 0.2 },
+            { label: 'หยุดรอรถ', data: labels.map(l => mapData[l]?.truck || 0), borderColor: '#f59e0b', tension: 0.2 },
+            { label: 'หยุดรออ้อย', data: labels.map(l => mapData[l]?.cane || 0), borderColor: '#f97316', tension: 0.2 },
+            { label: 'ไม่ทราบสาเหตุ', data: labels.map(l => mapData[l]?.unknown || 0), borderColor: '#ef4444', tension: 0.2 },
+            { label: 'Offline', data: labels.map(l => mapData[l]?.offline || 0), borderColor: '#6b7280', tension: 0.2 },
+            { label: 'ปิดเครน', data: labels.map(l => mapData[l]?.crane || 0), borderColor: '#4b5563', tension: 0.2 }
+          ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Prompt', size: 10 }, boxWidth: 8 } } },
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Prompt', size: 10 } }, grid: { color: '#F1F5F9' } },
-                x: { ticks: { font: { family: 'Prompt', size: 10 } }, grid: { display: false } }
-            }
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { family: 'Sarabun', size: 10 } } } }
         }
-    });
-}
-
-function renderStationsGrid(latestMap) {
-    const grid = document.getElementById('stationsGrid');
-    if (!grid) return;
-
-    grid.innerHTML = STATIONS.map((station, i) => {
-        const r = latestMap[station];
-        const sts = r ? parseStatuses(r.status) : [];
-        const main = STATUS_PRIORITY.find(s => sts.includes(s));
-        const style = main ? STATUS_STYLE[main] : null;
-        const colorClass = style ? style.card : 'bg-slate-100 border-slate-200 text-slate-600';
-        const dotClass = style ? style.dotBg : 'bg-slate-300';
-        const statusText = sts.length ? sts.join(', ') : 'ยังไม่มีข้อมูล';
-        const time = r && r.timeSlot ? r.timeSlot.split(' ')[0] : '-';
-
-        return `
-            <div class="border rounded-xl p-2.5 flex flex-col justify-between ${colorClass} transition-all hover:shadow-sm">
-                <div class="flex items-start justify-between gap-1 mb-1">
-                    <span class="text-[11px] font-bold truncate" title="${escapeHtml(station)}">${i + 1}. ${escapeHtml(station.replace('เครน', ''))}</span>
-                    <span class="w-2 h-2 rounded-full shrink-0 mt-1 ${dotClass}"></span>
-                </div>
-                <div class="flex items-center justify-between gap-1 text-[10px] opacity-80 pt-1 border-t border-black/5">
-                    <span class="font-medium truncate" title="${escapeHtml(statusText)}">${escapeHtml(statusText)}</span>
-                    <span class="shrink-0">${time}</span>
-                </div>
-            </div>`;
-    }).join('');
-}
-
-// ---------- API settings & backend ----------
-function loadStoredApiUrl() {
-    document.getElementById('webAppUrlInput').value = getApiUrl();
-}
-
-function openApiModal() { document.getElementById('apiModal').classList.remove('hidden'); }
-function closeApiModal() { document.getElementById('apiModal').classList.add('hidden'); }
-
-function saveApiUrl() {
-    const url = document.getElementById('webAppUrlInput').value.trim();
-    if (url) {
-        localStorage.setItem('rsc_web_app_url', url);
-        showToast('บันทึก Web App URL เรียบร้อยแล้ว', 'success');
-    } else {
-        localStorage.removeItem('rsc_web_app_url');
-        showToast('ใช้ Web App URL หลักเรียบร้อยแล้ว', 'info');
+      });
     }
-    closeApiModal();
-    loadDataFromBackend();
-}
 
-function sendToGoogleAppsScript(url, payload) {
-    if (!url) return;
-    try {
-        fetch(url, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        }).catch(err => console.warn('Network issue sending to Google Apps Script:', err));
-    } catch (err) {
-        console.warn('Error initiating sendToGoogleAppsScript:', err);
+    function renderBarChart(dataset, filterStation) {
+      const ctx = document.getElementById('chartBar').getContext('2d');
+      if (chartBarInstance) chartBarInstance.destroy();
+
+      let targetStations = filterStation ? [filterStation] : masterStations.slice(0, 15); // limit for preview viewability
+      let mapData = {};
+      targetStations.forEach(st => mapData[st] = { normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
+
+      dataset.forEach(r => {
+        if (mapData[r.station]) {
+          if (r.status.normal) mapData[r.station].normal++;
+          if (r.status.waitingTruck) mapData[r.station].truck++;
+          if (r.status.waitingCane) mapData[r.station].cane++;
+          if (r.status.unknown) mapData[r.station].unknown++;
+          if (r.status.offline) mapData[r.station].offline++;
+          if (r.status.craneClosed) mapData[r.station].crane++;
+        }
+      });
+
+      chartBarInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: targetStations,
+          datasets: [
+            { label: 'ปกติ', data: targetStations.map(s => mapData[s].normal), backgroundColor: '#10b981' },
+            { label: 'หยุดรอรถ', data: targetStations.map(s => mapData[s].truck), backgroundColor: '#f59e0b' },
+            { label: 'หยุดรออ้อย', data: targetStations.map(s => mapData[s].cane), backgroundColor: '#f97316' },
+            { label: 'ไม่ทราบสาเหตุ', data: targetStations.map(s => mapData[s].unknown), backgroundColor: '#ef4444' },
+            { label: 'Offline', data: targetStations.map(s => mapData[s].offline), backgroundColor: '#6b7280' },
+            { label: 'ปิดเครน', data: targetStations.map(s => mapData[s].crane), backgroundColor: '#4b5563' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true } },
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { family: 'Sarabun', size: 10 } } } }
+        }
+      });
     }
-}
 
-function loadDataFromBackend() {
-    const url = getApiUrl();
-    if (!url) { renderDataTable(); updateDashboard(); return; }
+    function renderDashboardSummaryTable(dataset, summaryType) {
+      const tbody = document.getElementById("dashTableBody");
+      tbody.innerHTML = "";
 
-    showLoading(true);
-    fetch(url, { method: 'GET', redirect: 'follow' })
-        .then(res => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
-        })
-        .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-                reportsData = data.map(normalizeRecord);
-                saveLocalData();
-                populateDailyFilterOptions();
-            }
-        })
-        .catch(err => console.warn('Fetch backend data error / fallback to local storage:', err))
-        .finally(() => {
-            showLoading(false);
-            renderDataTable();
-            updateDashboard();
+      let groups = {};
+
+      if (summaryType === 'hourly') {
+        masterTimeSlots.forEach(ts => groups[ts] = { label: ts, normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
+        dataset.forEach(r => {
+          if (groups[r.timeSlot]) {
+            if (r.status.normal) groups[r.timeSlot].normal++;
+            if (r.status.waitingTruck) groups[r.timeSlot].truck++;
+            if (r.status.waitingCane) groups[r.timeSlot].cane++;
+            if (r.status.unknown) groups[r.timeSlot].unknown++;
+            if (r.status.offline) groups[r.timeSlot].offline++;
+            if (r.status.craneClosed) groups[r.timeSlot].crane++;
+          }
         });
-}
+      } else {
+        masterStations.forEach(st => groups[st] = { label: st, normal:0, truck:0, cane:0, unknown:0, offline:0, crane:0 });
+        dataset.forEach(r => {
+          if (groups[r.station]) {
+            if (r.status.normal) groups[r.station].normal++;
+            if (r.status.waitingTruck) groups[r.station].truck++;
+            if (r.status.waitingCane) groups[r.station].cane++;
+            if (r.status.unknown) groups[r.station].unknown++;
+            if (r.status.offline) groups[r.station].offline++;
+            if (r.status.craneClosed) groups[r.station].crane++;
+          }
+        });
+      }
 
-// ---------- Local storage ----------
-function saveLocalData() {
-    try {
-        localStorage.setItem('rsc_reports_data', JSON.stringify(reportsData));
-    } catch (e) {
-        console.warn('Storage quota exceeded, caching without base64 photos', e);
-        try {
-            localStorage.setItem('rsc_reports_data', JSON.stringify(reportsData.map(r => ({ ...r, scaleImage: null, craneImage: null }))));
-        } catch (e2) {
-            console.warn('Unable to cache data locally', e2);
+      Object.values(groups).forEach(g => {
+        const totalStatus = g.normal + g.truck + g.cane + g.unknown + g.offline + g.crane;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="fw-bold">${g.label}</td>
+          <td class="text-center ${g.normal ? 'text-success fw-bold' : 'text-muted'}">${g.normal}</td>
+          <td class="text-center ${g.truck ? 'text-warning fw-bold' : 'text-muted'}">${g.truck}</td>
+          <td class="text-center ${g.cane ? 'text-danger fw-bold' : 'text-muted'}">${g.cane}</td>
+          <td class="text-center ${g.unknown ? 'text-danger fw-bold' : 'text-muted'}">${g.unknown}</td>
+          <td class="text-center ${g.offline ? 'text-secondary fw-bold' : 'text-muted'}">${g.offline}</td>
+          <td class="text-center ${g.crane ? 'text-dark fw-bold' : 'text-muted'}">${g.crane}</td>
+          <td class="text-center fw-bold text-primary">${totalStatus}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+
+    // DATA TABLE & CRUD LOGIC
+    function filterAndRenderTable() {
+      const fDate = document.getElementById("tblFilterDate").value;
+      const fTime = document.getElementById("tblFilterTime").value;
+      const fStation = document.getElementById("tblFilterStation").value;
+      const fStatus = document.getElementById("tblFilterStatus").value;
+      const fSearch = document.getElementById("tblSearchText").value.toLowerCase().trim();
+
+      filteredRecords = masterRecords.filter(r => {
+        if (fDate && r.dateIso !== fDate) return false;
+        if (fTime && r.timeSlot !== fTime) return false;
+        if (fStation && r.station !== fStation) return false;
+
+        if (fStatus && !r.status[fStatus]) return false;
+
+        if (fSearch) {
+          const str = `${r.dateStr} ${r.station} ${r.timeSlot}`.toLowerCase();
+          if (!str.includes(fSearch)) return false;
         }
-    }
-}
+        return true;
+      });
 
-function loadLocalData() {
-    try {
-        const stored = JSON.parse(localStorage.getItem('rsc_reports_data') || '[]');
-        reportsData = Array.isArray(stored) ? stored.map(normalizeRecord) : [];
-    } catch (e) {
-        reportsData = [];
+      currentPage = 1;
+      renderTablePage();
     }
-}
 
-</script>
+    function resetTableFilters() {
+      document.getElementById("tblFilterDate").value = "";
+      document.getElementById("tblFilterTime").value = "";
+      document.getElementById("tblFilterStation").value = "";
+      document.getElementById("tblFilterStatus").value = "";
+      document.getElementById("tblSearchText").value = "";
+      filterAndRenderTable();
+    }
+
+    function renderTablePage() {
+      const tbody = document.getElementById("tblBody");
+      tbody.innerHTML = "";
+
+      if (filteredRecords.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-folder-open"></i>
+                <p class="mb-0 fw-bold">ไม่พบข้อมูลสำหรับเงื่อนไขที่เลือก</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        document.getElementById("tblInfo").innerText = "0 รายการ";
+        document.getElementById("tblPagination").innerHTML = "";
+        return;
+      }
+
+      const totalItems = filteredRecords.length;
+      const totalPages = Math.ceil(totalItems / pageSize);
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalItems);
+      const pageData = filteredRecords.slice(startIndex, endIndex);
+
+      pageData.forEach(r => {
+        const tr = document.createElement("tr");
+
+        let statusBadges = "";
+        if (r.status.normal) statusBadges += `<span class="badge-status bg-normal text-white">ปกติ</span>`;
+        if (r.status.waitingTruck) statusBadges += `<span class="badge-status bg-truck text-white">หยุดรอรถ</span>`;
+        if (r.status.waitingCane) statusBadges += `<span class="badge-status bg-cane text-white">หยุดรออ้อย</span>`;
+        if (r.status.unknown) statusBadges += `<span class="badge-status bg-unknown text-white">หยุดไม่ทราบสาเหตุ</span>`;
+        if (r.status.offline) statusBadges += `<span class="badge-status bg-offline text-white">Offline</span>`;
+        if (r.status.craneClosed) statusBadges += `<span class="badge-status bg-crane text-white">ปิดเครน</span>`;
+
+        const scaleImgCell = r.scaleImgUrl
+          ? `<img src="${r.scaleImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'scale', '${r.scaleImgUrl}')">`
+          : `<span class="text-muted small">-</span>`;
+
+        const craneImgCell = r.craneImgUrl
+          ? `<img src="${r.craneImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'crane', '${r.craneImgUrl}')">`
+          : `<span class="text-muted small">-</span>`;
+
+        tr.innerHTML = `
+          <td>${r.dateStr}</td>
+          <td class="fw-bold">${r.station}</td>
+          <td><small>${r.timeSlot}</small></td>
+          <td>${statusBadges}</td>
+          <td class="text-center">${scaleImgCell}</td>
+          <td class="text-center">${craneImgCell}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadRecordToEdit('${r.id}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("tblInfo").innerText = `แสดง ${startIndex + 1} ถึง ${endIndex} จาก ${totalItems} รายการ`;
+      renderPaginationControls(totalPages);
+    }
+
+    function renderPaginationControls(totalPages) {
+      const pag = document.getElementById("tblPagination");
+      pag.innerHTML = "";
+
+      const prevLi = document.createElement("li");
+      prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+      prevLi.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${currentPage - 1})">ก่อนหน้า</a>`;
+      pag.appendChild(prevLi);
+
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+          const li = document.createElement("li");
+          li.className = `page-item ${p === currentPage ? 'active' : ''}`;
+          li.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${p})">${p}</a>`;
+          pag.appendChild(li);
+        }
+      }
+
+      const nextLi = document.createElement("li");
+      nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+      nextLi.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${currentPage + 1})">ถัดไป</a>`;
+      pag.appendChild(nextLi);
+    }
+
+    function gotoPage(p) {
+      if (p < 1) return;
+      currentPage = p;
+      renderTablePage();
+    }
+
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById("tblPageSize").value, 10);
+      currentPage = 1;
+      renderTablePage();
+    }
+
+    // Load Record into Form for Edit
+    function loadRecordToEdit(id) {
+      const rec = masterRecords.find(r => r.id === id);
+      if (!rec) return;
+
+      document.getElementById("editRecordId").value = rec.id;
+      document.getElementById("formDateIso").value = rec.dateIso;
+      document.getElementById("formStation").value = rec.station;
+      document.getElementById("formTimeSlot").value = rec.timeSlot;
+
+      document.getElementById("stNormal").checked = rec.status.normal;
+      document.getElementById("stWaitingTruck").checked = rec.status.waitingTruck;
+      document.getElementById("stWaitingCane").checked = rec.status.waitingCane;
+      document.getElementById("stUnknown").checked = rec.status.unknown;
+      document.getElementById("stOffline").checked = rec.status.offline;
+      document.getElementById("stCraneClosed").checked = rec.status.craneClosed;
+
+      handleDateChange();
+
+      if (rec.scaleImgUrl) {
+        document.getElementById("previewScaleImg").src = rec.scaleImgUrl;
+        document.getElementById("previewScaleImg").classList.remove("d-none");
+        document.getElementById("previewScalePlaceholder").classList.add("d-none");
+      } else {
+        removeImageSelection('Scale');
+      }
+
+      if (rec.craneImgUrl) {
+        document.getElementById("previewCraneImg").src = rec.craneImgUrl;
+        document.getElementById("previewCraneImg").classList.remove("d-none");
+        document.getElementById("previewCranePlaceholder").classList.add("d-none");
+      } else {
+        removeImageSelection('Crane');
+      }
+
+      switchTab('record');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Delete Record
+    function confirmDeleteRecord(id) {
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรายการนี้? (รวมถึงรูปภาพทั้งหมด)")) {
+        showLoading("กำลังลบข้อมูล...");
+        google.script.run
+          .withSuccessHandler(res => {
+            hideLoading();
+            if (res.success) {
+              showToast(res.message, 'success');
+              loadAllData();
+            } else {
+              showToast("ลบข้อมูลไม่สำเร็จ: " + res.message, 'error');
+            }
+          })
+          .withFailureHandler(err => {
+            hideLoading();
+            showToast("เกิดข้อผิดพลาด: " + err.toString(), 'error');
+          })
+          .deleteRecord(id);
+      }
+    }
+
+    // IMAGE VIEWER MODAL & ACTIONS
+    function openImageViewer(recordId, imageType, imgUrl) {
+      currentImageContext = { recordId, imageType };
+      document.getElementById("modalImgTitle").innerText = imageType === 'scale' ? 'รูปภาพตาชั่ง' : 'รูปภาพเครน';
+      document.getElementById("modalImgPreview").src = imgUrl;
+      document.getElementById("modalBtnDownload").href = imgUrl;
+
+      const modal = new bootstrap.Modal(document.getElementById("modalImageViewer"));
+      modal.show();
+    }
+
+    function executeImageDelete() {
+      if (!confirm("คุณต้องการลบรูปภาพนี้ออกจากระบบหรือไม่?")) return;
+
+      const modalElem = document.getElementById("modalImageViewer");
+      const modal = bootstrap.Modal.getInstance(modalElem);
+      if (modal) modal.hide();
+
+      showLoading("กำลังลบรูปภาพ...");
+      google.script.run
+        .withSuccessHandler(res => {
+          hideLoading();
+          if (res.success) {
+            showToast(res.message, 'success');
+            loadAllData();
+          } else {
+            showToast("ลบรูปภาพล้มเหลว: " + res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          hideLoading();
+          showToast("ระบบขัดข้อง: " + err.toString(), 'error');
+        })
+        .deleteImage(currentImageContext.recordId, currentImageContext.imageType);
+    }
+
+    function handleReplaceImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const modalElem = document.getElementById("modalImageViewer");
+      const modal = bootstrap.Modal.getInstance(modalElem);
+      if (modal) modal.hide();
+
+      showLoading("กำลังอัปโหลดรูปภาพใหม่...");
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        google.script.run
+          .withSuccessHandler(res => {
+            hideLoading();
+            if (res.success) {
+              showToast(res.message, 'success');
+              loadAllData();
+            } else {
+              showToast("อัปโหลดไม่สำเร็จ: " + res.message, 'error');
+            }
+          })
+          .withFailureHandler(err => {
+            hideLoading();
+            showToast("ข้อผิดพลาด: " + err.toString(), 'error');
+          })
+          .replaceImage(currentImageContext.recordId, currentImageContext.imageType, base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
 </body>
 </html>
