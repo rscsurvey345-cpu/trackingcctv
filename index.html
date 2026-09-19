@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th" class="h-full bg-slate-50">
 <head>
@@ -614,1049 +615,625 @@
     </div>
 
     <script>
-        // Default Google Apps Script Deployment URL
         const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKTnmtmO5TErA1rZi304N-RErWT3TqLv_XJ0j41PUBQboSeJfKcG7zfdSEC8wFOXR7/exec";
 
-        // 43 Sugarcane Transfer Stations
-        const STATIONS = [
-            "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่", "เครนวังโพธิ์(บ้านเหลื่อม1)",
-            "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน", "เครนทำนบ 2", "เครนทำนบพัฒนา", "เครนนาเสียว",
-            "เครนเนินสง่า", "เครนบ้านเขว้า1", "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1",
-            "เครนบ้านค่าย 2", "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา", "เครนรกฟ้า",
-            "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2", "เครนหนองโคบาล", "เครนหนองบัวแดง",
-            "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2", "เครนหนองบัวลาย", "เครนหนองพลวง", "เครนหนองแวง",
-            "เครนหนองหอย", "เครนหนองหัวฟาน", "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง",
-            "เครนท่าหินโงม", "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4", "เครนภูแลนคา 2",
-            "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
-        ];
+const STATIONS = [
+    "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่", "เครนวังโพธิ์(บ้านเหลื่อม1)",
+    "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน", "เครนทำนบ 2", "เครนทำนบพัฒนา", "เครนนาเสียว",
+    "เครนเนินสง่า", "เครนบ้านเขว้า1", "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1",
+    "เครนบ้านค่าย 2", "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา", "เครนรกฟ้า",
+    "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2", "เครนหนองโคบาล", "เครนหนองบัวแดง",
+    "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2", "เครนหนองบัวลาย", "เครนหนองพลวง", "เครนหนองแวง",
+    "เครนหนองหอย", "เครนหนองหัวฟาน", "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง",
+    "เครนท่าหินโงม", "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4", "เครนภูแลนคา 2",
+    "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
+];
 
-        let reportsData = [];
-        let selectedDailyFilter = 'ALL';
-        let targetDeleteId = null;
-        let scaleImageBase64 = null;
-        let craneImageBase64 = null;
-        let doughnutChart = null;
-        let lineChart = null;
+const TIME_SLOTS = Array.from({ length: 12 }, (_, i) => {
+    const p = n => String(n).padStart(2, '0');
+    return `${p(8 + i)}:00 - ${p(9 + i)}:00 น.`;
+});
 
-        // Initialize App on Load
-        window.onload = function() {
-            initHeaderDate();
-            populateStationsDropdown();
-            setDefaultDate();
-            loadStoredApiUrl();
-            loadLocalData();
-            loadMockDataIfEmpty();
-            populateDailyFilterOptions();
-            renderDataTable();
-            initCharts();
-            updateDashboard();
+const STATUS_LIST = ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ', 'offline', 'ปิดเครน'];
+const STATUS_PRIORITY = ['หยุดไม่ทราบสาเหตุ', 'หยุดรอรถ', 'หยุดรออ้อย', 'offline', 'ปิดเครน', 'ปกติ'];
+const ISSUE_STATUSES = ['หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ'];
+const OFFLINE_STATUSES = ['offline', 'ปิดเครน'];
 
-            // Auto fetch backend data if API URL exists
-            loadDataFromBackend();
+const STATUS_STYLE = {
+    'ปกติ':              { badge: 'bg-emerald-100 text-emerald-800', dot: 'text-emerald-500', card: 'bg-emerald-50 border-emerald-200 text-emerald-900', dotBg: 'bg-emerald-500', color: '#10B981' },
+    'หยุดรอรถ':          { badge: 'bg-amber-100 text-amber-800',     dot: 'text-amber-500',   card: 'bg-amber-50 border-amber-200 text-amber-900',       dotBg: 'bg-amber-500',   color: '#F59E0B' },
+    'หยุดรออ้อย':        { badge: 'bg-blue-100 text-blue-800',       dot: 'text-blue-500',    card: 'bg-blue-50 border-blue-200 text-blue-900',          dotBg: 'bg-blue-500',    color: '#3B82F6' },
+    'หยุดไม่ทราบสาเหตุ': { badge: 'bg-rose-100 text-rose-800',       dot: 'text-rose-500',    card: 'bg-rose-50 border-rose-200 text-rose-900',          dotBg: 'bg-rose-500',    color: '#EF4444' },
+    'offline':           { badge: 'bg-slate-200 text-slate-700',     dot: 'text-slate-500',   card: 'bg-slate-100 border-slate-300 text-slate-700',      dotBg: 'bg-slate-500',   color: '#94A3B8' },
+    'ปิดเครน':           { badge: 'bg-purple-100 text-purple-800',   dot: 'text-purple-500',  card: 'bg-purple-50 border-purple-200 text-purple-900',    dotBg: 'bg-purple-500',  color: '#A855F7' }
+};
+
+let reportsData = [];
+let selectedDailyFilter = 'ALL';
+let targetDeleteId = null;
+let images = { scale: null, crane: null };
+let doughnutChart = null;
+let lineChart = null;
+let toastTimer = null;
+
+// ---------- Helpers ----------
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const setText = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+const parseStatuses = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
+const hasAny = (r, list) => parseStatuses(r.status).some(s => list.includes(s));
+const sortKey = r => `${r.isoDate || ''} ${r.timeSlot || ''}`;
+
+function getThaiDateString(isoDateVal) {
+    if (!isoDateVal) return '-';
+    const parts = isoDateVal.split('-');
+    if (parts.length !== 3) return isoDateVal;
+    return `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
+}
+
+function thaiToIso(t) {
+    const m = String(t || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return m ? `${parseInt(m[3]) - 543}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+}
+
+// Make every record (local or from backend) have the same shape
+function normalizeRecord(r) {
+    const rec = { ...r };
+    rec.id = String(rec.id ?? ('REP-' + Date.now() + Math.random().toString(36).slice(2, 6)));
+    rec.station = rec.station || '';
+    rec.status = Array.isArray(rec.status) ? rec.status.join(', ') : String(rec.status || '');
+    rec.timeSlot = rec.timeSlot || '';
+    rec.isoDate = String(rec.isoDate || '').slice(0, 10) || thaiToIso(rec.thaiDate);
+    rec.thaiDate = rec.thaiDate || (rec.isoDate ? getThaiDateString(rec.isoDate) : '');
+    return rec;
+}
+
+// Latest record of each station (by date + time slot)
+function getLatestByStation(data) {
+    const map = {};
+    [...data].sort((a, b) => sortKey(a).localeCompare(sortKey(b))).forEach(r => { map[r.station] = r; });
+    return map;
+}
+
+// Convert various Google Drive URLs to a direct thumbnail link
+function formatImageUrl(url) {
+    if (!url || url === '-') return null;
+    if (url.startsWith('data:image')) return url;
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    return match && match[1] ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
+}
+
+function getApiUrl() {
+    return localStorage.getItem('rsc_web_app_url') || DEFAULT_WEB_APP_URL;
+}
+
+// ---------- Init ----------
+window.onload = function () {
+    initHeaderDate();
+    populateStationsDropdown();
+    setDefaultDate();
+    loadStoredApiUrl();
+    loadLocalData();
+    populateDailyFilterOptions();
+    renderDataTable();
+    try { initCharts(); } catch (e) { console.warn('Chart init failed:', e); }
+    updateDashboard();
+    loadDataFromBackend();
+};
+
+function initHeaderDate() {
+    const t = new Date();
+    setText('currentDateDisplay', `${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}/${t.getFullYear() + 543}`);
+}
+
+function populateStationsDropdown() {
+    const select = document.getElementById('stationSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="" disabled selected>-- เลือกสถานีขนถ่าย (43 สถานี) --</option>' +
+        STATIONS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+function setDefaultDate() {
+    const t = new Date();
+    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    const input = document.getElementById('reportDate');
+    if (input) { input.value = iso; updateThaiDateDisplay(iso); }
+}
+
+function updateThaiDateDisplay(isoDateVal) {
+    setText('thaiDatePreview', isoDateVal ? `รูปแบบ: ${getThaiDateString(isoDateVal)}` : 'รูปแบบ: -');
+}
+
+// ---------- Toast / Loading ----------
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toastNotification');
+    const icon = document.getElementById('toastIcon');
+    const msg = document.getElementById('toastMessage');
+    if (!toast) return;
+    const styles = {
+        success: ['fa-circle-check', 'text-emerald-400'],
+        error: ['fa-circle-xmark', 'text-rose-400'],
+        info: ['fa-circle-info', 'text-sky-400']
+    };
+    const [ic, col] = styles[type] || styles.info;
+    icon.className = `fa-solid ${ic} ${col} text-lg`;
+    msg.textContent = message;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+    }, 3500);
+}
+
+function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+}
+
+// ---------- Images ----------
+function setImage(type, src) {
+    images[type] = src || null;
+    document.getElementById(`${type}ImagePreview`).src = formatImageUrl(src) || '';
+    document.getElementById(`${type}PreviewContainer`).classList.toggle('hidden', !src);
+    document.getElementById(`${type}UploadArea`).classList.toggle('hidden', !!src);
+}
+
+function handleImageSelect(event, type) {
+    const file = event.target.files[0];
+    if (!file) return;
+    compressAndResizeImage(file, 800, 0.7, base64 => setImage(type, base64));
+}
+
+function removeImage(type) {
+    document.getElementById(`${type}ImageInput`).value = '';
+    setImage(type, null);
+}
+
+function downloadImage(type) {
+    const data = formatImageUrl(images[type]);
+    if (!data) return;
+    const link = document.createElement('a');
+    link.href = data;
+    link.download = `${type}_station_photo.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function compressAndResizeImage(file, maxWidth, quality, callback) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            callback(canvas.toDataURL('image/jpeg', quality));
         };
+        img.onerror = () => showToast('ไม่สามารถอ่านไฟล์รูปภาพนี้ได้', 'error');
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 
-        function getApiUrl() {
-            return localStorage.getItem('rsc_web_app_url') || DEFAULT_WEB_APP_URL;
+function openPhotoModal(title, imageSrc) {
+    setText('photoModalTitle', title);
+    document.getElementById('photoModalImg').src = imageSrc;
+    document.getElementById('photoModalDownloadBtn').href = imageSrc;
+    document.getElementById('photoModal').classList.remove('hidden');
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').classList.add('hidden');
+}
+
+function handleImgError(img) {
+    img.onerror = null;
+    img.outerHTML = placeholderHtml('โหลดรูปไม่สำเร็จ', 'fa-image');
+}
+
+function placeholderHtml(text, icon) {
+    return `<div style="width:5cm;height:5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid ${icon} text-lg mb-1"></i><span>${text}</span></div>`;
+}
+
+// ---------- Form ----------
+function limitStatusSelection(checkbox) {
+    if (document.querySelectorAll('input[name="stationStatus"]:checked').length > 2) {
+        checkbox.checked = false;
+        showToast('สามารถเลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
+    }
+}
+
+function resetForm() {
+    document.getElementById('reportForm').reset();
+    document.getElementById('editRowId').value = '';
+    setText('formTitleText', 'แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย');
+    setText('submitBtnText', 'บันทึกข้อมูลรายงาน');
+    document.querySelectorAll('input[name="stationStatus"]').forEach(cb => { cb.checked = (cb.value === 'ปกติ'); });
+    removeImage('scale');
+    removeImage('crane');
+    setDefaultDate();
+}
+
+function editRecord(id) {
+    const item = reportsData.find(r => r.id === String(id));
+    if (!item) return;
+
+    switchTab('form');
+    document.getElementById('editRowId').value = item.id;
+    setText('formTitleText', `แก้ไขข้อมูลรายงาน (${item.station})`);
+    setText('submitBtnText', 'อัปเดตข้อมูลรายงาน');
+
+    document.getElementById('stationSelect').value = item.station;
+    if (item.isoDate) {
+        document.getElementById('reportDate').value = item.isoDate;
+        updateThaiDateDisplay(item.isoDate);
+    }
+    document.getElementById('timeSlot').value = item.timeSlot;
+    document.getElementById('noteInput').value = item.note || '';
+
+    const sts = parseStatuses(item.status);
+    document.querySelectorAll('input[name="stationStatus"]').forEach(cb => { cb.checked = sts.includes(cb.value); });
+
+    setImage('scale', item.scaleImage);
+    setImage('crane', item.craneImage);
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const selected = Array.from(document.querySelectorAll('input[name="stationStatus"]:checked'));
+    if (selected.length === 0) return showToast('กรุณาเลือกสถานะการทำงานอย่างน้อย 1 อย่าง', 'error');
+    if (selected.length > 2) return showToast('เลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
+
+    const editId = document.getElementById('editRowId').value;
+    const isoDate = document.getElementById('reportDate').value;
+
+    const record = {
+        id: editId || 'REP-' + Date.now(),
+        timestamp: new Date().toLocaleString('th-TH'),
+        station: document.getElementById('stationSelect').value,
+        isoDate: isoDate,
+        thaiDate: getThaiDateString(isoDate),
+        timeSlot: document.getElementById('timeSlot').value,
+        status: selected.map(el => el.value).join(', '),
+        scaleImage: images.scale,
+        craneImage: images.crane,
+        note: document.getElementById('noteInput').value.trim()
+    };
+
+    if (editId) {
+        const idx = reportsData.findIndex(r => r.id === editId);
+        if (idx !== -1) reportsData[idx] = record; else reportsData.unshift(record);
+    } else {
+        reportsData.unshift(record);
+    }
+
+    saveLocalData();
+    populateDailyFilterOptions();
+    sendToGoogleAppsScript(getApiUrl(), record);
+
+    resetForm();
+    renderDataTable();
+    updateDashboard();
+    showToast(editId ? 'อัปเดตข้อมูลรายงานเรียบร้อยแล้ว' : 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+}
+
+// ---------- Filters ----------
+function populateDailyFilterOptions() {
+    const dateMap = new Map(reportsData.filter(r => r.thaiDate).map(r => [r.thaiDate, r.isoDate || '']));
+    const dates = [...dateMap.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(e => e[0]);
+
+    [['dailyFilterSelect', '-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --', selectedDailyFilter],
+     ['tableDateFilter', '-- ทุกวันที่ --', null]].forEach(([id, label, keep]) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const cur = keep ?? sel.value ?? 'ALL';
+        sel.innerHTML = `<option value="ALL">${label}</option>` +
+            dates.map(d => `<option value="${escapeHtml(d)}">วันที่ ${escapeHtml(d)}</option>`).join('');
+        sel.value = dates.includes(cur) ? cur : 'ALL';
+    });
+    selectedDailyFilter = document.getElementById('dailyFilterSelect').value;
+}
+
+function handleDailyFilterChange(val) {
+    selectedDailyFilter = val;
+    updateDashboard();
+}
+
+function getFilteredReports() {
+    return selectedDailyFilter === 'ALL' ? reportsData : reportsData.filter(r => r.thaiDate === selectedDailyFilter);
+}
+
+// ---------- Table ----------
+function getSingleBadgeHtml(status) {
+    const st = STATUS_STYLE[status];
+    if (!st) return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${escapeHtml(status)}</span>`;
+    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${st.badge}"><i class="fa-solid fa-circle text-[8px] ${st.dot}"></i> ${status}</span>`;
+}
+
+function getStatusBadge(status) {
+    const parts = parseStatuses(status);
+    if (!parts.length) return '-';
+    return `<div class="flex flex-wrap gap-1">${parts.map(getSingleBadgeHtml).join('')}</div>`;
+}
+
+function imageCell(src, label, station, icon, border) {
+    const body = src
+        ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(label + ' - ' + station)}" style="width:5cm;height:5cm;" onclick="openPhotoModal(this.alt, this.src)" onerror="handleImgError(this)" class="object-cover rounded-xl border ${border} shadow-sm cursor-pointer hover:opacity-90 transition-all">`
+        : placeholderHtml('ไม่มีรูป', icon);
+    return `<div class="flex flex-col items-center"><span class="text-[10px] text-slate-400 mb-1 font-medium">${label}</span>${body}</div>`;
+}
+
+function renderDataTable() {
+    const tbody = document.getElementById('dataTableBody');
+    if (!tbody) return;
+
+    const keyword = (document.getElementById('searchInput')?.value || '').toLowerCase();
+    const dateVal = document.getElementById('tableDateFilter')?.value || 'ALL';
+    const slotVal = document.getElementById('tableTimeSlotFilter')?.value || 'ALL';
+
+    const filtered = reportsData
+        .filter(r =>
+            (dateVal === 'ALL' || r.thaiDate === dateVal) &&
+            (slotVal === 'ALL' || r.timeSlot === slotVal) &&
+            (!keyword || [r.station, r.status, r.note].some(v => String(v || '').toLowerCase().includes(keyword))))
+        .sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+
+    if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-light"><i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>ไม่พบข้อมูลรายการที่เลือก</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-emerald-50/40 transition-colors border-b border-slate-100">
+            <td class="py-3 px-4 font-medium text-slate-700 whitespace-nowrap">
+                ${escapeHtml(item.thaiDate || '-')}<br>
+                <span class="text-[10px] text-slate-400">${escapeHtml(item.timestamp || '')}</span>
+            </td>
+            <td class="py-3 px-4 font-semibold text-emerald-900 whitespace-nowrap">${escapeHtml(item.station)}</td>
+            <td class="py-3 px-4 whitespace-nowrap text-slate-600">${escapeHtml(item.timeSlot)}</td>
+            <td class="py-3 px-4 whitespace-nowrap">${getStatusBadge(item.status)}</td>
+            <td class="py-3 px-4 text-center">
+                <div class="flex items-center justify-center gap-3">
+                    ${imageCell(formatImageUrl(item.scaleImage), 'รูปตาชั่ง', item.station, 'fa-weight-scale', 'border-emerald-200')}
+                    ${imageCell(formatImageUrl(item.craneImage), 'รูปเครน', item.station, 'fa-tower-observation', 'border-teal-200')}
+                </div>
+            </td>
+            <td class="py-3 px-4 max-w-xs truncate text-slate-500" title="${escapeHtml(item.note || '')}">${escapeHtml(item.note || '-')}</td>
+            <td class="py-3 px-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick="editRecord('${escapeHtml(item.id)}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="promptDeleteRecord('${escapeHtml(item.id)}')" class="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+// ---------- Delete ----------
+function promptDeleteRecord(id) {
+    targetDeleteId = String(id);
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    targetDeleteId = null;
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+function confirmDeleteRecord() {
+    if (!targetDeleteId) return;
+    const id = targetDeleteId;
+    closeDeleteModal();
+
+    sendToGoogleAppsScript(getApiUrl(), { action: 'delete', id: id });
+    reportsData = reportsData.filter(r => r.id !== id);
+    saveLocalData();
+    populateDailyFilterOptions();
+    renderDataTable();
+    updateDashboard();
+    showToast('ลบข้อมูลรายการเรียบร้อยแล้ว', 'info');
+}
+
+// ---------- Tabs ----------
+function switchTab(tab) {
+    const base = 'py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg ';
+    const active = base + 'border-emerald-300 text-white bg-white/10';
+    const inactive = base + 'border-transparent text-emerald-100 hover:text-white hover:bg-white/5';
+
+    ['form', 'dashboard', 'table'].forEach(t => {
+        document.getElementById(`tab-btn-${t}`).className = (t === tab) ? active : inactive;
+        document.getElementById(`tab-${t}-content`).classList.toggle('hidden', t !== tab);
+    });
+
+    if (tab === 'dashboard') {
+        updateDashboard();
+        if (doughnutChart) doughnutChart.resize();
+        if (lineChart) lineChart.resize();
+    } else if (tab === 'table') {
+        renderDataTable();
+    }
+}
+
+// ---------- Dashboard ----------
+function updateDashboard() {
+    const data = getFilteredReports();
+    const latestMap = getLatestByStation(data);
+    const latest = Object.values(latestMap).filter(r => STATIONS.includes(r.station));
+
+    // KPI: total = reports, others = stations (by latest report of each station)
+    setText('kpiTotalReports', data.length);
+    setText('kpiNormalCount', latest.filter(r => hasAny(r, ['ปกติ'])).length);
+    setText('kpiIssueCount', latest.filter(r => hasAny(r, ISSUE_STATUSES)).length);
+    setText('kpiOfflineCount', latest.filter(r => hasAny(r, OFFLINE_STATUSES)).length);
+
+    if (doughnutChart) {
+        doughnutChart.data.datasets[0].data = STATUS_LIST.map(s => data.filter(r => parseStatuses(r.status).includes(s)).length);
+        doughnutChart.update();
+    }
+
+    if (lineChart) {
+        STATUS_LIST.forEach((st, i) => {
+            lineChart.data.datasets[i].data = TIME_SLOTS.map(slot =>
+                data.filter(r => r.timeSlot === slot && parseStatuses(r.status).includes(st)).length);
+        });
+        lineChart.update();
+    }
+
+    renderStationsGrid(latestMap);
+}
+
+function initCharts() {
+    if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded'); return; }
+    const colors = STATUS_LIST.map(s => STATUS_STYLE[s].color);
+
+    doughnutChart = new Chart(document.getElementById('statusDoughnutChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: STATUS_LIST,
+            datasets: [{ data: STATUS_LIST.map(() => 0), backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff' }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Prompt', size: 11 }, boxWidth: 10, padding: 8 } } }
         }
+    });
 
-        function initHeaderDate() {
-            const today = new Date();
-            const day = String(today.getDate()).padStart(2, '0');
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const thaiYear = today.getFullYear() + 543;
-            document.getElementById('currentDateDisplay').innerText = `${day}/${month}/${thaiYear}`;
-        }
-
-        function populateStationsDropdown() {
-            const select = document.getElementById('stationSelect');
-            if (!select) return;
-            select.innerHTML = '<option value="" disabled selected>-- เลือกสถานีขนถ่าย (43 สถานี) --</option>';
-            STATIONS.forEach(st => {
-                const opt = document.createElement('option');
-                opt.value = st;
-                opt.textContent = st;
-                select.appendChild(opt);
-            });
-        }
-
-        function setDefaultDate() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const isoString = `${year}-${month}-${day}`;
-            const reportDateInput = document.getElementById('reportDate');
-            if (reportDateInput) {
-                reportDateInput.value = isoString;
-                updateThaiDateDisplay(isoString);
+    lineChart = new Chart(document.getElementById('hourlyLineChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: TIME_SLOTS.map(s => s.slice(0, 5)),
+            datasets: STATUS_LIST.map((s, i) => ({
+                label: s, data: [], borderColor: colors[i], backgroundColor: colors[i], borderWidth: 2, tension: 0.3, pointRadius: 3
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Prompt', size: 10 }, boxWidth: 8 } } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Prompt', size: 10 } }, grid: { color: '#F1F5F9' } },
+                x: { ticks: { font: { family: 'Prompt', size: 10 } }, grid: { display: false } }
             }
         }
+    });
+}
 
-        function updateThaiDateDisplay(isoDateVal) {
-            const preview = document.getElementById('thaiDatePreview');
-            if (!isoDateVal) {
-                preview.innerText = 'รูปแบบ: -';
-                return;
-            }
-            preview.innerText = `รูปแบบ: ${getThaiDateString(isoDateVal)}`;
-        }
+function renderStationsGrid(latestMap) {
+    const grid = document.getElementById('stationsGrid');
+    if (!grid) return;
 
-        function getThaiDateString(isoDateVal) {
-            if (!isoDateVal) return '-';
-            const parts = isoDateVal.split('-');
-            if (parts.length !== 3) return isoDateVal;
-            const day = parts[2];
-            const month = parts[1];
-            const thaiYear = parseInt(parts[0]) + 543;
-            return `${day}/${month}/${thaiYear}`;
-        }
+    grid.innerHTML = STATIONS.map((station, i) => {
+        const r = latestMap[station];
+        const sts = r ? parseStatuses(r.status) : [];
+        const main = STATUS_PRIORITY.find(s => sts.includes(s));
+        const style = main ? STATUS_STYLE[main] : null;
+        const colorClass = style ? style.card : 'bg-slate-100 border-slate-200 text-slate-600';
+        const dotClass = style ? style.dotBg : 'bg-slate-300';
+        const statusText = sts.length ? sts.join(', ') : 'ยังไม่มีข้อมูล';
+        const time = r && r.timeSlot ? r.timeSlot.split(' ')[0] : '-';
 
-        // --- Custom Image Handling with Compression ---
-        function handleImageSelect(event, type) {
-            const file = event.target.files[0];
-            if (!file) return;
+        return `
+            <div class="border rounded-xl p-2.5 flex flex-col justify-between ${colorClass} transition-all hover:shadow-sm">
+                <div class="flex items-start justify-between gap-1 mb-1">
+                    <span class="text-[11px] font-bold truncate" title="${escapeHtml(station)}">${i + 1}. ${escapeHtml(station.replace('เครน', ''))}</span>
+                    <span class="w-2 h-2 rounded-full shrink-0 mt-1 ${dotClass}"></span>
+                </div>
+                <div class="flex items-center justify-between gap-1 text-[10px] opacity-80 pt-1 border-t border-black/5">
+                    <span class="font-medium truncate" title="${escapeHtml(statusText)}">${escapeHtml(statusText)}</span>
+                    <span class="shrink-0">${time}</span>
+                </div>
+            </div>`;
+    }).join('');
+}
 
-            compressAndResizeImage(file, 800, 0.7, function(base64Str) {
-                if (type === 'scale') {
-                    scaleImageBase64 = base64Str;
-                    document.getElementById('scaleImagePreview').src = base64Str;
-                    document.getElementById('scalePreviewContainer').classList.remove('hidden');
-                    document.getElementById('scaleUploadArea').classList.add('hidden');
-                } else if (type === 'crane') {
-                    craneImageBase64 = base64Str;
-                    document.getElementById('craneImagePreview').src = base64Str;
-                    document.getElementById('cranePreviewContainer').classList.remove('hidden');
-                    document.getElementById('craneUploadArea').classList.add('hidden');
-                }
-            });
-        }
+// ---------- API settings & backend ----------
+function loadStoredApiUrl() {
+    document.getElementById('webAppUrlInput').value = getApiUrl();
+}
 
-        function removeImage(type) {
-            if (type === 'scale') {
-                scaleImageBase64 = null;
-                document.getElementById('scaleImageInput').value = '';
-                document.getElementById('scalePreviewContainer').classList.add('hidden');
-                document.getElementById('scaleUploadArea').classList.remove('hidden');
-            } else if (type === 'crane') {
-                craneImageBase64 = null;
-                document.getElementById('craneImageInput').value = '';
-                document.getElementById('cranePreviewContainer').classList.add('hidden');
-                document.getElementById('craneUploadArea').classList.remove('hidden');
-            }
-        }
+function openApiModal() { document.getElementById('apiModal').classList.remove('hidden'); }
+function closeApiModal() { document.getElementById('apiModal').classList.add('hidden'); }
 
-        function downloadImage(type) {
-            const data = type === 'scale' ? scaleImageBase64 : craneImageBase64;
-            if (!data) return;
-            const link = document.createElement('a');
-            link.href = data;
-            link.download = `${type}_station_photo.jpg`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+function saveApiUrl() {
+    const url = document.getElementById('webAppUrlInput').value.trim();
+    if (url) {
+        localStorage.setItem('rsc_web_app_url', url);
+        showToast('บันทึก Web App URL เรียบร้อยแล้ว', 'success');
+    } else {
+        localStorage.removeItem('rsc_web_app_url');
+        showToast('ใช้ Web App URL หลักเรียบร้อยแล้ว', 'info');
+    }
+    closeApiModal();
+    loadDataFromBackend();
+}
 
-        function compressAndResizeImage(file, maxWidth, quality, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
+function sendToGoogleAppsScript(url, payload) {
+    if (!url) return;
+    try {
+        fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        }).catch(err => console.warn('Network issue sending to Google Apps Script:', err));
+    } catch (err) {
+        console.warn('Error initiating sendToGoogleAppsScript:', err);
+    }
+}
 
-                    if (width > maxWidth) {
-                        height = Math.round((height * maxWidth) / width);
-                        width = maxWidth;
-                    }
+function loadDataFromBackend() {
+    const url = getApiUrl();
+    if (!url) { renderDataTable(); updateDashboard(); return; }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-                    callback(compressedBase64);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // --- Photo Modal ---
-        function openPhotoModal(title, imageSrc) {
-            document.getElementById('photoModalTitle').innerText = title;
-            document.getElementById('photoModalImg').src = imageSrc;
-            document.getElementById('photoModalDownloadBtn').href = imageSrc;
-            document.getElementById('photoModal').classList.remove('hidden');
-        }
-
-        function closePhotoModal() {
-            document.getElementById('photoModal').classList.add('hidden');
-        }
-
-        // Limit status selection to maximum 2 items
-        function limitStatusSelection(checkbox) {
-            const checkedBoxes = document.querySelectorAll('input[name="stationStatus"]:checked');
-            if (checkedBoxes.length > 2) {
-                checkbox.checked = false;
-                showToast('สามารถเลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
-            }
-        }
-
-        // --- Form Reset & Edit Logic ---
-        function resetForm() {
-            document.getElementById('reportForm').reset();
-            document.getElementById('editRowId').value = '';
-            document.getElementById('formTitleText').innerText = 'แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย';
-            document.getElementById('submitBtnText').innerText = 'บันทึกข้อมูลรายงาน';
-            
-            // Default select "ปกติ" checkbox
-            const checkboxes = document.querySelectorAll('input[name="stationStatus"]');
-            checkboxes.forEach(cb => {
-                cb.checked = (cb.value === 'ปกติ');
-            });
-
-            removeImage('scale');
-            removeImage('crane');
-            setDefaultDate();
-        }
-
-        function editRecord(id) {
-            const item = reportsData.find(r => r.id === id);
-            if (!item) return;
-
-            switchTab('form');
-
-            document.getElementById('editRowId').value = item.id;
-            document.getElementById('formTitleText').innerText = `แก้ไขข้อมูลรายงาน (${item.station})`;
-            document.getElementById('submitBtnText').innerText = 'อัปเดตข้อมูลรายงาน';
-
-            document.getElementById('stationSelect').value = item.station;
-            if (item.isoDate) {
-                document.getElementById('reportDate').value = item.isoDate;
-                updateThaiDateDisplay(item.isoDate);
-            }
-            document.getElementById('timeSlot').value = item.timeSlot;
-            document.getElementById('noteInput').value = item.note || '';
-
-            // Check matching checkboxes (status can be a single status or comma-separated string)
-            const statusArr = (item.status || '').split(',').map(s => s.trim());
-            const checkboxes = document.querySelectorAll('input[name="stationStatus"]');
-            checkboxes.forEach(cb => {
-                cb.checked = statusArr.includes(cb.value);
-            });
-
-            // Images
-            if (item.scaleImage) {
-                scaleImageBase64 = item.scaleImage;
-                document.getElementById('scaleImagePreview').src = item.scaleImage;
-                document.getElementById('scalePreviewContainer').classList.remove('hidden');
-                document.getElementById('scaleUploadArea').classList.add('hidden');
-            } else {
-                removeImage('scale');
-            }
-
-            if (item.craneImage) {
-                craneImageBase64 = item.craneImage;
-                document.getElementById('craneImagePreview').src = item.craneImage;
-                document.getElementById('cranePreviewContainer').classList.remove('hidden');
-                document.getElementById('craneUploadArea').classList.add('hidden');
-            } else {
-                removeImage('crane');
-            }
-        }
-
-        // --- Handle Form Submission ---
-        function handleFormSubmit(e) {
-            e.preventDefault();
-
-            // Validate status selection (1 - 2 items)
-            const selectedStatusElements = Array.from(document.querySelectorAll('input[name="stationStatus"]:checked'));
-            if (selectedStatusElements.length === 0) {
-                showToast('กรุณาเลือกสถานะการทำงานอย่างน้อย 1 อย่าง', 'error');
-                return;
-            }
-            if (selectedStatusElements.length > 2) {
-                showToast('เลือกสถานะการทำงานได้สูงสุด 2 อย่างเท่านั้น', 'error');
-                return;
-            }
-
-            const statusString = selectedStatusElements.map(el => el.value).join(', ');
-
-            showLoading(true);
-
-            const editId = document.getElementById('editRowId').value;
-            const station = document.getElementById('stationSelect').value;
-            const isoDate = document.getElementById('reportDate').value;
-            const thaiDate = getThaiDateString(isoDate);
-            const timeSlot = document.getElementById('timeSlot').value;
-            const note = document.getElementById('noteInput').value.trim();
-
-            const record = {
-                id: editId ? editId : 'REP-' + Date.now(),
-                timestamp: new Date().toLocaleString('th-TH'),
-                station: station,
-                isoDate: isoDate,
-                thaiDate: thaiDate,
-                timeSlot: timeSlot,
-                status: statusString,
-                scaleImage: scaleImageBase64,
-                craneImage: craneImageBase64,
-                note: note
-            };
-
-            setTimeout(() => {
-                if (editId) {
-                    const index = reportsData.findIndex(r => r.id === editId);
-                    if (index !== -1) reportsData[index] = record;
-                } else {
-                    reportsData.unshift(record);
-                }
-
+    showLoading(true);
+    fetch(url, { method: 'GET', redirect: 'follow' })
+        .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+                reportsData = data.map(normalizeRecord);
                 saveLocalData();
                 populateDailyFilterOptions();
-
-                const webAppUrl = getApiUrl();
-                if (webAppUrl) {
-                    sendToGoogleAppsScript(webAppUrl, record);
-                }
-
-                showLoading(false);
-                resetForm();
-                renderDataTable();
-                updateDashboard();
-
-                showToast(editId ? 'อัปเดตข้อมูลรายงานเรียบร้อยแล้ว' : 'บันทึกข้อมูลสำเร็จและอัปโหลดรูปภาพแล้ว', 'success');
-            }, 600);
-        }
-
-        function showToast(message, type = 'success') {
-        // --- Daily Filter & Table Filter Options Logic ---
-        function populateDailyFilterOptions() {
-            const dashboardSelect = document.getElementById('dailyFilterSelect');
-            const tableDateSelect = document.getElementById('tableDateFilter');
-
-            const dates = [...new Set(reportsData.map(r => r.thaiDate).filter(Boolean))];
-            
-            if (dashboardSelect) {
-                const currentDashVal = dashboardSelect.value || 'ALL';
-                dashboardSelect.innerHTML = '<option value="ALL">-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --</option>';
-                dates.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d;
-                    opt.textContent = `วันที่ ${d}`;
-                    dashboardSelect.appendChild(opt);
-                });
-                dashboardSelect.value = currentDashVal;
             }
-
-            if (tableDateSelect) {
-                const currentTableVal = tableDateSelect.value || 'ALL';
-                tableDateSelect.innerHTML = '<option value="ALL">-- ทุกวันที่ --</option>';
-                dates.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d;
-                    opt.textContent = `วันที่ ${d}`;
-                    tableDateSelect.appendChild(opt);
-                });
-                tableDateSelect.value = currentTableVal;
-            }
-        }
-
-        function handleDailyFilterChange(val) {
-            selectedDailyFilter = val;
-            updateDashboard();
-        }
-
-        function getFilteredReports() {
-            if (selectedDailyFilter === 'ALL') {
-                return reportsData;
-            }
-            return reportsData.filter(r => r.thaiDate === selectedDailyFilter);
-        }
-
-        // ช่วยแปลง URL ของ Google Drive รูปแบบต่างๆ ให้เป็น Direct Image Link ที่โหลดได้แน่นอน
-        function formatImageUrl(url) {
-            if (!url || url === '-') return null;
-            if (url.startsWith('data:image')) return url; // Base64
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-            }
-            return url;
-        }
-
-        function renderDataTable() {
-            const tbody = document.getElementById('dataTableBody');
-            if (!tbody) return;
-
-            const searchKeyword = (document.getElementById('searchInput')?.value || '').toLowerCase();
-            const dateFilterVal = document.getElementById('tableDateFilter')?.value || 'ALL';
-            const timeSlotFilterVal = document.getElementById('tableTimeSlotFilter')?.value || 'ALL';
-
-            const filtered = reportsData.filter(r => {
-                const matchesDate = (dateFilterVal === 'ALL' || r.thaiDate === dateFilterVal);
-                const matchesTimeSlot = (timeSlotFilterVal === 'ALL' || r.timeSlot === timeSlotFilterVal);
-                const matchesKeyword = !searchKeyword || 
-                    (r.station && r.station.toLowerCase().includes(searchKeyword)) ||
-                    (r.status && r.status.toLowerCase().includes(searchKeyword)) ||
-                    (r.note && r.note.toLowerCase().includes(searchKeyword));
-
-                return matchesDate && matchesTimeSlot && matchesKeyword;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="py-8 text-center text-slate-400 font-light">
-                            <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
-                            ไม่พบข้อมูลรายการที่เลือก
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(item => {
-                const scaleImg = formatImageUrl(item.scaleImage);
-                const craneImg = formatImageUrl(item.craneImage);
-
-                return `
-                    <tr class="hover:bg-emerald-50/40 transition-colors border-b border-slate-100">
-                        <td class="py-3 px-4 font-medium text-slate-700 whitespace-nowrap">
-                            ${item.thaiDate || '-'}<br>
-                            <span class="text-[10px] text-slate-400">${item.timestamp || ''}</span>
-                        </td>
-                        <td class="py-3 px-4 font-semibold text-emerald-900 whitespace-nowrap">
-                            ${item.station}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap text-slate-600">
-                            ${item.timeSlot}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
-                            ${getStatusBadge(item.status)}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-3">
-                                <!-- Scale Image 5x5 cm -->
-                                <div class="flex flex-col items-center">
-                                    <span class="text-[10px] text-slate-400 mb-1 font-medium">รูปตาชั่ง</span>
-                                    ${scaleImg ? `
-                                        <img src="${scaleImg}" onclick="openPhotoModal('รูปตาชั่ง - ${item.station}', '${scaleImg}')" style="width: 5cm; height: 5cm;" class="object-cover rounded-xl border border-emerald-200 shadow-sm cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all" onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\'width: 5cm; height: 5cm;\' class=\'bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs\'>โหลดรูปไม่สำเร็จ</div>';">
-                                    ` : `
-                                        <div style="width: 5cm; height: 5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs">
-                                            <i class="fa-solid fa-weight-scale text-lg mb-1"></i>
-                                            <span>ไม่มีรูป</span>
-                                        </div>
-                                    `}
-                                </div>
-                                <!-- Crane Image 5x5 cm -->
-                                <div class="flex flex-col items-center">
-                                    <span class="text-[10px] text-slate-400 mb-1 font-medium">รูปเครน</span>
-                                    ${craneImg ? `
-                                        <img src="${craneImg}" onclick="openPhotoModal('รูปเครน - ${item.station}', '${craneImg}')" style="width: 5cm; height: 5cm;" class="object-cover rounded-xl border border-teal-200 shadow-sm cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all" onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\'width: 5cm; height: 5cm;\' class=\'bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs\'>โหลดรูปไม่สำเร็จ</div>';">
-                                    ` : `
-                                        <div style="width: 5cm; height: 5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs">
-                                            <i class="fa-solid fa-tower-observation text-lg mb-1"></i>
-                                            <span>ไม่มีรูป</span>
-                                        </div>
-                                    `}
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 max-w-xs truncate text-slate-500" title="${item.note || ''}">
-                            ${item.note || '-'}
-                        </td>
-                        <td class="py-3 px-4 text-center whitespace-nowrap">
-                            <div class="flex items-center justify-center gap-1">
-                                <button onclick="editRecord('${item.id}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button onclick="promptDeleteRecord('${item.id}')" class="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function getSingleBadgeHtml(status) {
-            switch(status) {
-                case 'ปกติ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle text-[8px] text-emerald-500"></i> ปกติ</span>`;
-                case 'หยุดรอรถ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"><i class="fa-solid fa-circle text-[8px] text-amber-500"></i> หยุดรอรถ</span>`;
-                case 'หยุดรออ้อย':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"><i class="fa-solid fa-circle text-[8px] text-blue-500"></i> หยุดรออ้อย</span>`;
-                case 'หยุดไม่ทราบสาเหตุ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800"><i class="fa-solid fa-circle text-[8px] text-rose-500"></i> หยุดไม่ทราบสาเหตุ</span>`;
-                case 'offline':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700"><i class="fa-solid fa-circle text-[8px] text-slate-500"></i> offline</span>`;
-                case 'ปิดเครน':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fa-solid fa-circle text-[8px] text-purple-500"></i> ปิดเครน</span>`;
-                default:
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${status}</span>`;
-            }
-        }
-
-        function getStatusBadge(status) {
-            if (!status) return '-';
-            const parts = status.split(',').map(s => s.trim()).filter(Boolean);
-            if (parts.length === 0) return '-';
-            return `<div class="flex flex-wrap gap-1">${parts.map(p => getSingleBadgeHtml(p)).join('')}</div>`;
-        }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3500);
-        }
-
-        function promptDeleteRecord(id) {
-            targetDeleteId = id;
-            document.getElementById('deleteModal').classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            targetDeleteId = null;
-            document.getElementById('deleteModal').classList.add('hidden');
-        }
-
-        function confirmDeleteRecord() {
-            if (!targetDeleteId) return;
-
-            const idToDelete = targetDeleteId;
-            closeDeleteModal();
-            showLoading(true);
-
-            // Send Delete Request to Backend
-            const webAppUrl = getApiUrl();
-            if (webAppUrl) {
-                sendToGoogleAppsScript(webAppUrl, {
-                    action: "delete",
-                    id: idToDelete
-                });
-            }
-
-            // Remove locally
-            reportsData = reportsData.filter(r => r.id !== idToDelete);
-            saveLocalData();
-            populateDailyFilterOptions();
-
-            setTimeout(() => {
-                showLoading(false);
-                renderDataTable();
-                updateDashboard();
-                showToast('ลบข้อมูลรายการเรียบร้อยแล้ว', 'info');
-            }, 500);
-        }
-
-        function switchTab(tab) {
-            const formBtn = document.getElementById('tab-btn-form');
-            const dashBtn = document.getElementById('tab-btn-dashboard');
-            const tableBtn = document.getElementById('tab-btn-table');
-
-            const formContent = document.getElementById('tab-form-content');
-            const dashContent = document.getElementById('tab-dashboard-content');
-            const tableContent = document.getElementById('tab-table-content');
-
-            const activeClass = "py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 border-emerald-300 text-white bg-white/10 rounded-t-lg";
-            const inactiveClass = "py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 border-transparent text-emerald-100 hover:text-white hover:bg-white/5 rounded-t-lg";
-
-            formBtn.className = inactiveClass;
-            dashBtn.className = inactiveClass;
-            tableBtn.className = inactiveClass;
-
-            formContent.classList.add('hidden');
-            dashContent.classList.add('hidden');
-            tableContent.classList.add('hidden');
-
-            if (tab === 'form') {
-                formBtn.className = activeClass;
-                formContent.classList.remove('hidden');
-            } else if (tab === 'dashboard') {
-                dashBtn.className = activeClass;
-                dashContent.classList.remove('hidden');
-                updateDashboard();
-            } else if (tab === 'table') {
-                tableBtn.className = activeClass;
-                tableContent.classList.remove('hidden');
-                renderDataTable();
-            }
-        }
-
-        // --- Daily Filter Dropdown Logic ---
-        function populateDailyFilterOptions() {
-            const select = document.getElementById('dailyFilterSelect');
-            if (!select) return;
-
-            const dates = [...new Set(reportsData.map(r => r.thaiDate).filter(Boolean))];
-            
-            select.innerHTML = '<option value="ALL">-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --</option>';
-            dates.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d;
-                opt.textContent = `วันที่ ${d}`;
-                select.appendChild(opt);
-            });
-
-            select.value = selectedDailyFilter;
-        }
-
-        function handleDailyFilterChange(val) {
-            selectedDailyFilter = val;
-            updateDashboard();
+        })
+        .catch(err => console.warn('Fetch backend data error / fallback to local storage:', err))
+        .finally(() => {
+            showLoading(false);
             renderDataTable();
+            updateDashboard();
+        });
+}
+
+// ---------- Local storage ----------
+function saveLocalData() {
+    try {
+        localStorage.setItem('rsc_reports_data', JSON.stringify(reportsData));
+    } catch (e) {
+        console.warn('Storage quota exceeded, caching without base64 photos', e);
+        try {
+            localStorage.setItem('rsc_reports_data', JSON.stringify(reportsData.map(r => ({ ...r, scaleImage: null, craneImage: null }))));
+        } catch (e2) {
+            console.warn('Unable to cache data locally', e2);
         }
+    }
+}
 
-        function getFilteredReports() {
-            if (selectedDailyFilter === 'ALL') {
-                return reportsData;
-            }
-            return reportsData.filter(r => r.thaiDate === selectedDailyFilter);
-        }
-
-        function renderDataTable() {
-            const tbody = document.getElementById('dataTableBody');
-            if (!tbody) return;
-
-            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
-            const currentData = getFilteredReports();
-
-            const filtered = currentData.filter(r => 
-                r.station.toLowerCase().includes(searchKeyword) ||
-                r.status.toLowerCase().includes(searchKeyword) ||
-                (r.note && r.note.toLowerCase().includes(searchKeyword))
-            );
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="py-8 text-center text-slate-400 font-light">
-                            <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
-                            ไม่พบข้อมูลรายการที่เลือก
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(item => {
-                return `
-                    <tr class="hover:bg-emerald-50/40 transition-colors border-b border-slate-100">
-                        <td class="py-3 px-4 font-medium text-slate-700 whitespace-nowrap">
-                            ${item.thaiDate || '-'}<br>
-                            <span class="text-[10px] text-slate-400">${item.timestamp || ''}</span>
-                        </td>
-                        <td class="py-3 px-4 font-semibold text-emerald-900 whitespace-nowrap">
-                            ${item.station}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap text-slate-600">
-                            ${item.timeSlot}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
-                            ${getStatusBadge(item.status)}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-3">
-                                <!-- Scale Image 5x5 cm -->
-                                <div class="flex flex-col items-center">
-                                    <span class="text-[10px] text-slate-400 mb-1 font-medium">รูปตาชั่ง</span>
-                                    ${item.scaleImage ? `
-                                        <img src="${item.scaleImage}" onclick="openPhotoModal('รูปตาชั่ง - ${item.station}', '${item.scaleImage}')" style="width: 5cm; height: 5cm;" class="object-cover rounded-xl border border-emerald-200 shadow-sm cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all">
-                                    ` : `
-                                        <div style="width: 5cm; height: 5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs">
-                                            <i class="fa-solid fa-weight-scale text-lg mb-1"></i>
-                                            <span>ไม่มีรูป</span>
-                                        </div>
-                                    `}
-                                </div>
-                                <!-- Crane Image 5x5 cm -->
-                                <div class="flex flex-col items-center">
-                                    <span class="text-[10px] text-slate-400 mb-1 font-medium">รูปเครน</span>
-                                    ${item.craneImage ? `
-                                        <img src="${item.craneImage}" onclick="openPhotoModal('รูปเครน - ${item.station}', '${item.craneImage}')" style="width: 5cm; height: 5cm;" class="object-cover rounded-xl border border-teal-200 shadow-sm cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all">
-                                    ` : `
-                                        <div style="width: 5cm; height: 5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs">
-                                            <i class="fa-solid fa-tower-observation text-lg mb-1"></i>
-                                            <span>ไม่มีรูป</span>
-                                        </div>
-                                    `}
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 max-w-xs truncate text-slate-500" title="${item.note || ''}">
-                            ${item.note || '-'}
-                        </td>
-                        <td class="py-3 px-4 text-center whitespace-nowrap">
-                            <div class="flex items-center justify-center gap-1">
-                                <button onclick="editRecord('${item.id}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button onclick="promptDeleteRecord('${item.id}')" class="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function getStatusBadge(status) {
-            switch(status) {
-                case 'ปกติ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle text-[8px] text-emerald-500"></i> ปกติ</span>`;
-                case 'หยุดรอรถ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"><i class="fa-solid fa-circle text-[8px] text-amber-500"></i> หยุดรอรถ</span>`;
-                case 'หยุดรออ้อย':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"><i class="fa-solid fa-circle text-[8px] text-blue-500"></i> หยุดรออ้อย</span>`;
-                case 'หยุดไม่ทราบสาเหตุ':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800"><i class="fa-solid fa-circle text-[8px] text-rose-500"></i> หยุดไม่ทราบสาเหตุ</span>`;
-                case 'offline':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700"><i class="fa-solid fa-circle text-[8px] text-slate-500"></i> offline</span>`;
-                case 'ปิดเครน':
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fa-solid fa-circle text-[8px] text-purple-500"></i> ปิดเครน</span>`;
-                default:
-                    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${status}</span>`;
-            }
-        }
-
-        function updateDashboard() {
-            const filteredDataset = getFilteredReports();
-
-            // 1. KPI Calculations
-            const total = filteredDataset.length;
-            const normalCount = filteredDataset.filter(r => r.status === 'ปกติ').length;
-            const issueCount = filteredDataset.filter(r => r.status === 'หยุดรอรถ' || r.status === 'หยุดรออ้อย' || r.status === 'หยุดไม่ทราบสาเหตุ').length;
-            const offlineCount = filteredDataset.filter(r => r.status === 'offline' || r.status === 'ปิดเครน').length;
-
-            document.getElementById('kpiTotalReports').innerText = total;
-            document.getElementById('kpiNormalCount').innerText = normalCount;
-            document.getElementById('kpiIssueCount').innerText = issueCount;
-            document.getElementById('kpiOfflineCount').innerText = offlineCount;
-
-            // 2. Status Counts for Doughnut Chart
-            const statusCounts = { 'ปกติ': 0, 'หยุดรอรถ': 0, 'หยุดรออ้อย': 0, 'หยุดไม่ทราบสาเหตุ': 0, 'offline': 0, 'ปิดเครน': 0 };
-            filteredDataset.forEach(r => {
-                if (statusCounts[r.status] !== undefined) statusCounts[r.status]++;
-            });
-
-            if (doughnutChart) {
-                doughnutChart.data.datasets[0].data = Object.values(statusCounts);
-                doughnutChart.update();
-            }
-
-            // 3. Hourly Trend Line Chart with 6 status datasets
-            const timeSlots = [
-                "08:00 - 09:00 น.", "09:00 - 10:00 น.", "10:00 - 11:00 น.", "11:00 - 12:00 น.",
-                "12:00 - 13:00 น.", "13:00 - 14:00 น.", "14:00 - 15:00 น.", "15:00 - 16:00 น.",
-                "16:00 - 17:00 น.", "17:00 - 18:00 น.", "18:00 - 19:00 น.", "19:00 - 20:00 น."
-            ];
-
-            const statuses = ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ', 'offline', 'ปิดเครน'];
-            
-            if (lineChart) {
-                statuses.forEach((st, idx) => {
-                    const dataCounts = timeSlots.map(slot => filteredDataset.filter(r => r.timeSlot === slot && r.status === st).length);
-                    lineChart.data.datasets[idx].data = dataCounts;
-                });
-                lineChart.update();
-            }
-
-            // 4. Update 43 Stations Grid Status
-            renderStationsGrid(filteredDataset);
-        }
-
-        function initCharts() {
-            // Doughnut Chart Setup
-            const ctxDoughnut = document.getElementById('statusDoughnutChart').getContext('2d');
-            doughnutChart = new Chart(ctxDoughnut, {
-                type: 'doughnut',
-                data: {
-                    labels: ['ปกติ', 'หยุดรอรถ', 'หยุดรออ้อย', 'หยุดไม่ทราบสาเหตุ', 'offline', 'ปิดเครน'],
-                    datasets: [{
-                        data: [0, 0, 0, 0, 0, 0],
-                        backgroundColor: [
-                            '#10B981', // ปกติ - Emerald
-                            '#F59E0B', // หยุดรอรถ - Amber
-                            '#3B82F6', // หยุดรออ้อย - Blue
-                            '#EF4444', // หยุดไม่ทราบสาเหตุ - Rose
-                            '#94A3B8', // offline - Slate
-                            '#A855F7'  // ปิดเครน - Purple
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: { family: 'Prompt', size: 11 },
-                                boxWidth: 10,
-                                padding: 8
-                            }
-                        }
-                    },
-                    cutout: '68%'
-                }
-            });
-
-            // Multi-Line Chart Setup for tracking 6 statuses
-            const ctxLine = document.getElementById('hourlyLineChart').getContext('2d');
-            lineChart = new Chart(ctxLine, {
-                type: 'line',
-                data: {
-                    labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'],
-                    datasets: [
-                        { label: 'ปกติ', data: [], borderColor: '#10B981', backgroundColor: '#10B981', borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                        { label: 'หยุดรอรถ', data: [], borderColor: '#F59E0B', backgroundColor: '#F59E0B', borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                        { label: 'หยุดรออ้อย', data: [], borderColor: '#3B82F6', backgroundColor: '#3B82F6', borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                        { label: 'หยุดไม่ทราบสาเหตุ', data: [], borderColor: '#EF4444', backgroundColor: '#EF4444', borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                        { label: 'offline', data: [], borderColor: '#94A3B8', backgroundColor: '#94A3B8', borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                        { label: 'ปิดเครน', data: [], borderColor: '#A855F7', backgroundColor: '#A855F7', borderWidth: 2, tension: 0.3, pointRadius: 3 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { font: { family: 'Prompt', size: 10 }, boxWidth: 8 }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 1, font: { family: 'Prompt', size: 10 } },
-                            grid: { color: '#F1F5F9' }
-                        },
-                        x: {
-                            ticks: { font: { family: 'Prompt', size: 10 } },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderStationsGrid(dataset) {
-            const gridContainer = document.getElementById('stationsGrid');
-            if (!gridContainer) return;
-
-            const stationStatusMap = {};
-            STATIONS.forEach(s => stationStatusMap[s] = { status: 'ยังไม่มีข้อมูล', time: '-' });
-
-            dataset.forEach(r => {
-                if (STATIONS.includes(r.station)) {
-                    stationStatusMap[r.station] = {
-                        status: r.status,
-                        time: r.timeSlot ? r.timeSlot.split(' ')[0] : '-'
-                    };
-                }
-            });
-
-            gridContainer.innerHTML = STATIONS.map((station, i) => {
-                const info = stationStatusMap[station];
-                let colorClass = 'bg-slate-100 border-slate-200 text-slate-600';
-                let dotClass = 'bg-slate-400';
-
-                if (info.status === 'ปกติ') {
-                    colorClass = 'bg-emerald-50 border-emerald-200 text-emerald-900';
-                    dotClass = 'bg-emerald-500';
-                } else if (info.status === 'หยุดรอรถ') {
-                    colorClass = 'bg-amber-50 border-amber-200 text-amber-900';
-                    dotClass = 'bg-amber-500';
-                } else if (info.status === 'หยุดรออ้อย') {
-                    colorClass = 'bg-blue-50 border-blue-200 text-blue-900';
-                    dotClass = 'bg-blue-500';
-                } else if (info.status === 'หยุดไม่ทราบสาเหตุ') {
-                    colorClass = 'bg-rose-50 border-rose-200 text-rose-900';
-                    dotClass = 'bg-rose-500';
-                } else if (info.status === 'offline') {
-                    colorClass = 'bg-slate-100 border-slate-300 text-slate-700';
-                    dotClass = 'bg-slate-500';
-                } else if (info.status === 'ปิดเครน') {
-                    colorClass = 'bg-purple-50 border-purple-200 text-purple-900';
-                    dotClass = 'bg-purple-500';
-                }
-
-                return `
-                    <div class="border rounded-xl p-2.5 flex flex-col justify-between ${colorClass} transition-all hover:shadow-sm">
-                        <div class="flex items-start justify-between gap-1 mb-1">
-                            <span class="text-[11px] font-bold truncate" title="${station}">${i+1}. ${station.replace('เครน', '')}</span>
-                            <span class="w-2 h-2 rounded-full shrink-0 mt-1 ${dotClass}"></span>
-                        </div>
-                        <div class="flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-black/5">
-                            <span class="font-medium">${info.status}</span>
-                            <span>${info.time}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function loadStoredApiUrl() {
-            const url = getApiUrl();
-            if (url) {
-                document.getElementById('webAppUrlInput').value = url;
-            }
-        }
-
-        function openApiModal() {
-            document.getElementById('apiModal').classList.remove('hidden');
-        }
-
-        function closeApiModal() {
-            document.getElementById('apiModal').classList.add('hidden');
-        }
-
-        function saveApiUrl() {
-            const url = document.getElementById('webAppUrlInput').value.trim();
-            if (url) {
-                localStorage.setItem('rsc_web_app_url', url);
-                showToast('บันทึก Web App URL เรียบร้อยแล้ว', 'success');
-            } else {
-                localStorage.removeItem('rsc_web_app_url');
-                showToast('ใช้ Web App URL หลักเรียบร้อยแล้ว', 'info');
-            }
-            closeApiModal();
-            loadDataFromBackend();
-        }
-
-        function sendToGoogleAppsScript(url, payload) {
-            try {
-                fetch(url, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                }).then(() => {
-                    console.log('ส่งข้อมูลไปยัง Google Apps Script สำเร็จ');
-                }).catch(err => {
-                    console.warn('Network issue sending to Google Apps Script:', err);
-                });
-            } catch (err) {
-                console.warn('Error initiating sendToGoogleAppsScript:', err);
-            }
-        }
-
-        function loadDataFromBackend() {
-            const url = getApiUrl();
-            if (!url) {
-                renderDataTable();
-                updateDashboard();
-                return;
-            }
-
-            showLoading(true);
-            fetch(url, { method: 'GET', redirect: 'follow' })
-                .then(res => {
-                    if (!res.ok) throw new Error("HTTP " + res.status);
-                    return res.json();
-                })
-                .then(data => {
-                    if (Array.isArray(data) && data.length > 0) {
-                        reportsData = data;
-                        saveLocalData();
-                        populateDailyFilterOptions();
-                        renderDataTable();
-                        updateDashboard();
-                    }
-                    showLoading(false);
-                })
-                .catch(err => {
-                    console.warn('Fetch backend data error / fallback to local storage:', err);
-                    showLoading(false);
-                    renderDataTable();
-                    updateDashboard();
-                });
-        }
-
-        function saveLocalData() {
-            try {
-                localStorage.setItem('rsc_reports_data', JSON.stringify(reportsData));
-            } catch (e) {
-                console.warn("Storage quota exceeded, removing base64 photos for local cache fallback", e);
-                const stripped = reportsData.map(r => ({ ...r, scaleImage: null, craneImage: null }));
-                localStorage.setItem('rsc_reports_data', JSON.stringify(stripped));
-            }
-        }
-
-        function loadLocalData() {
-            const stored = localStorage.getItem('rsc_reports_data');
-            if (stored) {
-                try {
-                    reportsData = JSON.parse(stored);
-                } catch(e) {
-                    reportsData = [];
-                }
-            }
-        }
-
-        function loadMockDataIfEmpty() {
-            if (reportsData.length === 0) {
-                const todayIso = new Date().toISOString().split('T')[0];
-                const thaiToday = getThaiDateString(todayIso);
-
-                reportsData = [
-                    {
-                        id: 'REP-101',
-                        timestamp: new Date().toLocaleString('th-TH'),
-                        station: 'เครนขามสะแกแสง1',
-                        isoDate: todayIso,
-                        thaiDate: thaiToday,
-                        timeSlot: '08:00 - 09:00 น.',
-                        status: 'ปกติ',
-                        scaleImage: null,
-                        craneImage: null,
-                        note: 'การขนถ่ายเป็นไปตามแผนงานปกติ'
-                    },
-                    {
-                        id: 'REP-102',
-                        timestamp: new Date().toLocaleString('th-TH'),
-                        station: 'เครนคูเมือง',
-                        isoDate: todayIso,
-                        thaiDate: thaiToday,
-                        timeSlot: '09:00 - 10:00 น.',
-                        status: 'หยุดรอรถ',
-                        scaleImage: null,
-                        craneImage: null,
-                        note: 'รอพ่วงพ่วงรับอ้อยจากหน้าสถานี'
-                    },
-                    {
-                        id: 'REP-103',
-                        timestamp: new Date().toLocaleString('th-TH'),
-                        station: 'เครนบ้านเขว้า1',
-                        isoDate: todayIso,
-                        thaiDate: thaiToday,
-                        timeSlot: '10:00 - 11:00 น.',
-                        status: 'หยุดรออ้อย',
-                        scaleImage: null,
-                        craneImage: null,
-                        note: 'เกษตรกรอยู่ระหว่างตัดและขนส่งอ้อย'
-                    }
-                ];
-                saveLocalData();
-            }
-        }
-
-        function showLoading(show) {
-            const overlay = document.getElementById('loadingOverlay');
-            if (show) overlay.classList.remove('hidden');
-            else overlay.classList.add('hidden');
-        }
+function loadLocalData() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('rsc_reports_data') || '[]');
+        reportsData = Array.isArray(stored) ? stored.map(normalizeRecord) : [];
+    } catch (e) {
+        reportsData = [];
+    }
+}
     </script>
 </body>
 </html>
