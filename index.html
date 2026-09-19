@@ -1,621 +1,106 @@
-
 <!DOCTYPE html>
 <html lang="th" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบรายงานสถานการณ์สถานีขนถ่ายอ้อย โรงงานน้ำตาลราชสีมา 2569/70</title>
-
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        pastel: {
-                            mint: '#D1FAE5',
-                            mintDark: '#10B981',
-                            sage: '#E6F4EA',
-                            sageDark: '#059669',
-                            bg: '#F4FBF7',
-                            card: '#FFFFFF',
-                            text: '#1F2937',
-                            border: '#A7F3D0'
-                        }
-                    },
-                    fontFamily: {
-                        prompt: ['Prompt', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- Google Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body {
-            font-family: 'Prompt', sans-serif;
-            background-color: #F4FBF7;
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #E6F4EA;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #A7F3D0;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #34D399;
-        }
+        body { font-family: 'Prompt', sans-serif; background-color: #F4FBF7; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #E6F4EA; }
+        ::-webkit-scrollbar-thumb { background: #A7F3D0; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #34D399; }
     </style>
 </head>
 <body class="min-h-full text-slate-800 flex flex-col justify-between">
-
-    <div>
-        <!-- Header Banner -->
-        <header class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white shadow-md sticky top-0 z-30">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2.5 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 shadow-inner">
-                        <i class="fa-solid fa-industry text-2xl text-emerald-200"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-lg sm:text-xl font-bold leading-tight">
-                            ระบบรายงานสถานการณ์สถานีขนถ่ายอ้อย
-                        </h1>
-                        <p class="text-xs sm:text-sm text-emerald-100 flex items-center gap-1.5 font-light">
-                            <span>โรงงานน้ำตาลราชสีมา</span>
-                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
-                            <span class="bg-emerald-800/60 px-2 py-0.5 rounded-full text-xs text-emerald-200 font-medium">ปีการผลิต 2569/70</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Web App Settings & Current Date -->
-                <div class="flex items-center justify-between md:justify-end gap-3 text-xs sm:text-sm">
-                    <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
-                        <i class="fa-regular fa-calendar-check text-emerald-300"></i>
-                        <span id="currentDateDisplay" class="font-medium">--/--/----</span>
-                    </div>
-                    <button onclick="openApiModal()" class="bg-emerald-800/80 hover:bg-emerald-900 transition-colors px-3 py-1.5 rounded-xl border border-emerald-400/30 flex items-center gap-1.5 text-emerald-100 shadow-sm" title="ตั้งค่า Google Apps Script Web App URL">
-                        <i class="fa-solid fa-gear text-emerald-300"></i>
-                        <span class="hidden sm:inline">ตั้งค่า API</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Navigation Tabs (3 Tabs) -->
-            <div class="bg-emerald-900/40 border-t border-emerald-500/20 px-4 sm:px-6">
-                <div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-4">
-                    <button id="tab-btn-form" onclick="switchTab('form')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 border-emerald-300 text-white bg-white/10 rounded-t-lg">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>[1] บันทึกข้อมูลรายงาน</span>
-                    </button>
-                    <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 border-transparent text-emerald-100 hover:text-white hover:bg-white/5 rounded-t-lg">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span>[2] Dashboard สรุปสถานการณ์</span>
-                    </button>
-                    <button id="tab-btn-table" onclick="switchTab('table')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 border-transparent text-emerald-100 hover:text-white hover:bg-white/5 rounded-t-lg">
-                        <i class="fa-solid fa-table-list"></i>
-                        <span>[3] รายการรายงานที่เคยบันทึกไว้</span>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-            <!-- TAB 1: FORM MANAGEMENT -->
-            <section id="tab-form-content" class="space-y-6">
-                <!-- Data Entry Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
-                        <h2 class="text-base sm:text-lg font-semibold text-emerald-900 flex items-center gap-2">
-                            <i class="fa-solid fa-file-circle-plus text-emerald-600"></i>
-                            <span id="formTitleText">แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย</span>
-                        </h2>
-                        <span class="text-xs text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full font-medium">
-                            กรอกข้อมูลตามจริง
-                        </span>
-                    </div>
-
-                    <form id="reportForm" onsubmit="handleFormSubmit(event)" class="p-4 sm:p-6 space-y-6">
-                        <input type="hidden" id="editRowId" value="">
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                            <!-- 1. Station Select -->
-                            <div class="space-y-1.5">
-                                <label for="stationSelect" class="block text-xs sm:text-sm font-medium text-slate-700">
-                                    สถานีขนถ่าย (43 สถานี) <span class="text-rose-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <select id="stationSelect" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 appearance-none transition-all">
-                                        <option value="" disabled selected>-- เลือกสถานีขนถ่าย --</option>
-                                    </select>
-                                    <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-xs text-slate-400 pointer-events-none"></i>
-                                </div>
-                            </div>
-
-                            <!-- 2. Date Picker (Thai Buddhist Year) -->
-                            <div class="space-y-1.5">
-                                <label for="reportDate" class="block text-xs sm:text-sm font-medium text-slate-700">
-                                    วันที่บันทึก (พ.ศ. ไทย) <span class="text-rose-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <input type="date" id="reportDate" required onchange="updateThaiDateDisplay(this.value)" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all">
-                                </div>
-                                <p id="thaiDatePreview" class="text-xs text-emerald-700 font-medium pl-1">
-                                    รูปแบบ: -
-                                </p>
-                            </div>
-
-                            <!-- 3. Time Slot -->
-                            <div class="space-y-1.5">
-                                <label for="timeSlot" class="block text-xs sm:text-sm font-medium text-slate-700">
-                                    ช่วงเวลา <span class="text-rose-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <select id="timeSlot" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 appearance-none transition-all">
-                                        <option value="" disabled selected>-- เลือกช่วงเวลา --</option>
-                                        <option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option>
-                                        <option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option>
-                                        <option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option>
-                                        <option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option>
-                                        <option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option>
-                                        <option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option>
-                                        <option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option>
-                                        <option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option>
-                                        <option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option>
-                                        <option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option>
-                                        <option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option>
-                                        <option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option>
-                                    </select>
-                                    <i class="fa-solid fa-clock absolute right-3 top-3.5 text-xs text-slate-400 pointer-events-none"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 4. Status Radio Selection -> Multi-selection (1-2 items) -->
-                        <div class="space-y-2">
-                            <label class="block text-xs sm:text-sm font-medium text-slate-700">
-                                สถานะการทำงาน <span class="text-rose-500">* (เลือกได้ 1 - 2 อย่าง)</span>
-                            </label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-emerald-200 bg-emerald-50/50 rounded-xl cursor-pointer hover:bg-emerald-100/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="ปกติ" checked onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-circle-check text-emerald-600 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-emerald-900">ปกติ</span>
-                                    <div class="absolute inset-0 border-2 border-emerald-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-amber-200 bg-amber-50/50 rounded-xl cursor-pointer hover:bg-amber-100/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="หยุดรอรถ" onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-truck-ramp-box text-amber-600 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-amber-900">หยุดรอรถ</span>
-                                    <div class="absolute inset-0 border-2 border-amber-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-blue-200 bg-blue-50/50 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="หยุดรออ้อย" onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-wheat-awn text-blue-600 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-blue-900">หยุดรออ้อย</span>
-                                    <div class="absolute inset-0 border-2 border-blue-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-rose-200 bg-rose-50/50 rounded-xl cursor-pointer hover:bg-rose-100/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="หยุดไม่ทราบสาเหตุ" onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-circle-question text-rose-600 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-rose-900">หยุดไม่ทราบสาเหตุ</span>
-                                    <div class="absolute inset-0 border-2 border-rose-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-slate-200 bg-slate-100/60 rounded-xl cursor-pointer hover:bg-slate-200/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="offline" onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-wifi text-slate-500 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-slate-700">offline</span>
-                                    <div class="absolute inset-0 border-2 border-slate-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-
-                                <label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-purple-200 bg-purple-50/50 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-all text-center group">
-                                    <input type="checkbox" name="stationStatus" value="ปิดเครน" onchange="limitStatusSelection(this)" class="sr-only peer">
-                                    <i class="fa-solid fa-power-off text-purple-600 text-lg mb-1 group-hover:scale-110 transition-transform"></i>
-                                    <span class="text-xs font-semibold text-purple-900">ปิดเครน</span>
-                                    <div class="absolute inset-0 border-2 border-purple-600 rounded-xl hidden peer-checked:block pointer-events-none"></div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- 5. Image Uploads (2 Slots) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Slot 1: รูปตาชั่ง -->
-                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-weight-scale text-emerald-600"></i>
-                                        1. รูปตาชั่ง
-                                    </label>
-                                    <span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span>
-                                </div>
-
-                                <div id="scalePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group">
-                                    <img id="scaleImagePreview" src="" alt="รูปตาชั่ง" class="w-full h-48 object-cover">
-                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <button type="button" onclick="downloadImage('scale')" class="p-2 bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป">
-                                            <i class="fa-solid fa-download"></i>
-                                        </button>
-                                        <button type="button" onclick="removeImage('scale')" class="p-2 bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div id="scaleUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer">
-                                    <input type="file" id="scaleImageInput" accept="image/*" onchange="handleImageSelect(event, 'scale')" class="hidden">
-                                    <label for="scaleImageInput" class="cursor-pointer flex flex-col items-center">
-                                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-emerald-500 mb-1"></i>
-                                        <span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปตาชั่ง</span>
-                                        <span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Slot 2: รูปเครน -->
-                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-tower-observation text-emerald-600"></i>
-                                        2. รูปเครน
-                                    </label>
-                                    <span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span>
-                                </div>
-
-                                <div id="cranePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group">
-                                    <img id="craneImagePreview" src="" alt="รูปเครน" class="w-full h-48 object-cover">
-                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <button type="button" onclick="downloadImage('crane')" class="p-2 bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป">
-                                            <i class="fa-solid fa-download"></i>
-                                        </button>
-                                        <button type="button" onclick="removeImage('crane')" class="p-2 bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div id="craneUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer">
-                                    <input type="file" id="craneImageInput" accept="image/*" onchange="handleImageSelect(event, 'crane')" class="hidden">
-                                    <label for="craneImageInput" class="cursor-pointer flex flex-col items-center">
-                                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-emerald-500 mb-1"></i>
-                                        <span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปเครน</span>
-                                        <span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Additional Notes -->
-                        <div class="space-y-1.5">
-                            <label for="noteInput" class="block text-xs sm:text-sm font-medium text-slate-700">
-                                หมายเหตุเพิ่มเติม (ถ้ามี)
-                            </label>
-                            <input type="text" id="noteInput" placeholder="ระบุรายละเอียดเพิ่มเติม..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all">
-                        </div>
-
-                        <!-- Submit / Reset Buttons -->
-                        <div class="flex items-center justify-end gap-3 pt-2">
-                            <button type="button" onclick="resetForm()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-medium transition-colors">
-                                <i class="fa-solid fa-rotate-left mr-1"></i> ล้างฟอร์ม
-                            </button>
-                            <button type="submit" id="btnSubmitForm" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                <span id="submitBtnText">บันทึกข้อมูลรายงาน</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- TAB 2: DASHBOARD -->
-            <section id="tab-dashboard-content" class="hidden space-y-6">
-
-                <!-- Daily Summary Date Selection Banner -->
-                <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-emerald-900 font-semibold text-sm">
-                        <i class="fa-solid fa-filter text-emerald-600"></i>
-                        <span>ตัวกรองสรุปข้อมูลรายวัน:</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <select id="dailyFilterSelect" onchange="handleDailyFilterChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 appearance-none font-medium min-w-[220px]">
-                            <option value="ALL">-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- KPI Cards Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-                    <!-- Total Reports -->
-                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">รายงานทั้งหมด</p>
-                            <h3 id="kpiTotalReports" class="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">0</h3>
-                            <span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">ฉบับ</span>
-                        </div>
-                        <div class="w-12 h-12 bg-emerald-100/60 text-emerald-700 rounded-2xl flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-clipboard-list"></i>
-                        </div>
-                    </div>
-
-                    <!-- Normal Stations -->
-                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">เปิดใช้งานปกติ</p>
-                            <h3 id="kpiNormalCount" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">0</h3>
-                            <span class="text-[10px] text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span>
-                        </div>
-                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-circle-check"></i>
-                        </div>
-                    </div>
-
-                    <!-- Issue/Stopped Stations -->
-                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-amber-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">หยุดชั่วคราว / มีปัญหา</p>
-                            <h3 id="kpiIssueCount" class="text-2xl sm:text-3xl font-bold text-amber-600 mt-1">0</h3>
-                            <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span>
-                        </div>
-                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </div>
-                    </div>
-
-                    <!-- Offline / Closed -->
-                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">Offline / ปิดเครน</p>
-                            <h3 id="kpiOfflineCount" class="text-2xl sm:text-3xl font-bold text-slate-600 mt-1">0</h3>
-                            <span class="text-[10px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span>
-                        </div>
-                        <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-power-off"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Row -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <!-- Chart 1: Status Doughnut Chart -->
-                    <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-pie text-emerald-600"></i>
-                                สัดส่วนสถานะการทำงาน
-                            </h3>
-                            <span class="text-[11px] text-slate-400">ภาพรวมสถานะ</span>
-                        </div>
-                        <div class="relative w-full h-64 flex items-center justify-center">
-                            <canvas id="statusDoughnutChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Chart 2: Hourly Trend Multi-Line Chart (All 6 Statuses) -->
-                    <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-line text-emerald-600"></i>
-                                ติดตามสถานะตามช่วงเวลา (08:00 - 20:00 น.)
-                            </h3>
-                            <span class="text-[11px] text-slate-400">จำแนกตามสถานะ</span>
-                        </div>
-                        <div class="relative w-full h-64">
-                            <canvas id="hourlyLineChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- All Stations Live Grid Monitoring -->
-                <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-grip text-emerald-600"></i>
-                                สถานะล่าสุดของ 43 สถานีขนถ่าย
-                            </h3>
-                            <p class="text-xs text-slate-500">แสดงสถานะล่าสุดที่ถูกบันทึกเข้ามาของแต่ละสถานี</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 text-[11px]">
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ปกติ</span>
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> รอรถ</span>
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> รออ้อย</span>
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> ไม่ทราบสาเหตุ</span>
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Offline</span>
-                            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> ปิดเครน</span>
-                        </div>
-                    </div>
-
-                    <div id="stationsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 max-h-96 overflow-y-auto pr-1">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-
-            </section>
-
-            <!-- TAB 3: DATA TABLE & GALLERY -->
-            <section id="tab-table-content" class="hidden space-y-6">
-                <!-- Data Table Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-                    <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-table-list text-emerald-600"></i>
-                                รายการรายงานที่เคยบันทึกไว้
-                            </h3>
-                            <p class="text-xs text-slate-500">แสดงข้อมูลย้อนหลัง และรูปภาพจากสถานีขนาด 5x5 ซม.</p>
-                        </div>
-
-                        <!-- Filter Controls -->
-                        <div class="flex flex-wrap items-center gap-2">
-                            <!-- Date Filter Dropdown -->
-                            <div class="relative min-w-[150px]">
-                                <select id="tableDateFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 appearance-none font-medium focus:ring-emerald-500 focus:border-emerald-500">
-                                    <option value="ALL">-- ทุกวันที่ --</option>
-                                </select>
-                                <i class="fa-solid fa-calendar-days absolute right-2.5 top-2.5 text-xs text-slate-400 pointer-events-none"></i>
-                            </div>
-
-                            <!-- Time Slot Filter Dropdown -->
-                            <div class="relative min-w-[160px]">
-                                <select id="tableTimeSlotFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 appearance-none font-medium focus:ring-emerald-500 focus:border-emerald-500">
-                                    <option value="ALL">-- ทุกช่วงเวลา --</option>
-                                    <option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option>
-                                    <option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option>
-                                    <option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option>
-                                    <option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option>
-                                    <option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option>
-                                    <option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option>
-                                    <option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option>
-                                    <option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option>
-                                    <option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option>
-                                    <option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option>
-                                    <option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option>
-                                    <option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option>
-                                </select>
-                                <i class="fa-solid fa-clock absolute right-2.5 top-2.5 text-xs text-slate-400 pointer-events-none"></i>
-                            </div>
-
-                            <!-- Table Search Input -->
-                            <div class="relative min-w-[150px]">
-                                <input type="text" id="searchInput" onkeyup="renderDataTable()" placeholder="ค้นหาสถานี..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 pr-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
-                                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
-                            </div>
-
-                            <!-- Refresh Button -->
-                            <button onclick="loadDataFromBackend()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5">
-                                <i class="fa-solid fa-arrows-rotate"></i>
-                                <span>รีเฟรชข้อมูล</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs sm:text-sm text-slate-600">
-                            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-[11px] border-b border-slate-200">
-                                <tr>
-                                    <th class="py-3 px-4">วัน/เวลา</th>
-                                    <th class="py-3 px-4">สถานีขนถ่าย</th>
-                                    <th class="py-3 px-4">ช่วงเวลา</th>
-                                    <th class="py-3 px-4">สถานะ</th>
-                                    <th class="py-3 px-4 text-center">รูปภาพประกอบ (ขนาด 5x5 ซม.)</th>
-                                    <th class="py-3 px-4">หมายเหตุ</th>
-                                    <th class="py-3 px-4 text-center">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dataTableBody" class="divide-y divide-slate-100">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
+<div>
+<header class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white shadow-md sticky top-0 z-30">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="flex items-center space-x-3">
+      <div>
+        <h1 class="text-lg sm:text-xl font-bold leading-tight">ระบบรายงานสถานการณ์สถานีขนถ่ายอ้อย</h1>
+        <p class="text-xs sm:text-sm text-emerald-100 flex items-center gap-1.5 font-light"><span>โรงงานน้ำตาลราชสีมา</span><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span class="bg-emerald-800/60 px-2 py-0.5 rounded-full text-xs text-emerald-200 font-medium">ปีการผลิต 2569/70</span></p>
+      </div>
     </div>
-
-    <!-- Modal 1: Photo Viewer Modal -->
-    <div id="photoModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-3 border border-slate-200">
-            <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <h3 id="photoModalTitle" class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-image text-emerald-600"></i>
-                    <span>รูปภาพ</span>
-                </h3>
-                <button onclick="closePhotoModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <div class="p-4 flex items-center justify-center bg-slate-900 min-h-[300px]">
-                <img id="photoModalImg" src="" alt="Enlarged photo" class="max-h-[70vh] object-contain rounded-lg">
-            </div>
-            <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                <a id="photoModalDownloadBtn" download="station_photo.jpg" href="#" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">
-                    <i class="fa-solid fa-download"></i> ดาวน์โหลดรูปภาพ
-                </a>
-                <button onclick="closePhotoModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-medium">ปิด</button>
-            </div>
-        </div>
+    <div class="flex items-center justify-between md:justify-end gap-3 text-xs sm:text-sm">
+      <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2"><span id="currentDateDisplay" class="font-medium">--/--/----</span></div>
+      <button onclick="openApiModal()" class="bg-emerald-800/80 hover:bg-emerald-900 transition-colors px-3 py-1.5 rounded-xl border border-emerald-400/30 flex items-center gap-1.5 text-emerald-100 shadow-sm" title="ตั้งค่า Google Apps Script Web App URL"><span>ตั้งค่า API</span></button>
     </div>
-
-    <!-- Modal 2: API Config Modal -->
-    <div id="apiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-emerald-100">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-link text-emerald-600"></i>
-                    ตั้งค่า Google Apps Script Web App
-                </h3>
-                <button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <p class="text-xs text-slate-500 leading-relaxed">
-                วาง Web App URL ของ Google Apps Script เพื่อบันทึกข้อมูลลง Google Sheets และอัปโหลดรูปภาพลง Google Drive โดยตรง
-            </p>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-slate-700">Web App URL</label>
-                <input type="url" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500">
-            </div>
-            <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeApiModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl">ยกเลิก</button>
-                <button onclick="saveApiUrl()" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">บันทึกการตั้งค่า</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal 3: Custom Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-rose-100">
-            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl mx-auto">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <div class="text-center space-y-1">
-                <h3 class="text-base font-bold text-slate-800">ยืนยันการลบข้อมูล</h3>
-                <p class="text-xs text-slate-500">คุณแน่ใจหรือไม่ว่าต้องการลบรายการรายงานนี้? ข้อมูลในระบบและ Google Sheets จะถูกลบออกทันที</p>
-            </div>
-            <div class="flex items-center gap-3 pt-2">
-                <button onclick="closeDeleteModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors">ยกเลิก</button>
-                <button onclick="confirmDeleteRecord()" class="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-md shadow-rose-600/20 transition-colors">ยืนยันการลบ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-        <span id="toastMessage" class="text-xs sm:text-sm font-medium">ข้อความแจ้งเตือน</span>
-    </div>
-
-    <!-- Loading Spinner Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center text-white">
-        <div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
-        <p class="text-sm font-medium tracking-wide">กำลังประมวลผลข้อมูล...</p>
-    </div>
-
-    <script>
-        const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKTnmtmO5TErA1rZi304N-RErWT3TqLv_XJ0j41PUBQboSeJfKcG7zfdSEC8wFOXR7/exec";
+  </div>
+  <div class="bg-emerald-900/40 border-t border-emerald-500/20 px-4 sm:px-6"><div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-4"><button id="tab-btn-form" onclick="switchTab('form')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-emerald-300 text-white bg-white/10"><span>[1] บันทึกข้อมูลรายงาน</span></button><button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-transparent text-emerald-100 hover:text-white hover:bg-white/5"><span>[2] Dashboard สรุปสถานการณ์</span></button><button id="tab-btn-table" onclick="switchTab('table')" class="py-3 px-4 sm:px-6 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg border-transparent text-emerald-100 hover:text-white hover:bg-white/5"><span>[3] รายการรายงานที่เคยบันทึกไว้</span></button></div></div>
+</header>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<section id="tab-form-content" class="space-y-6">
+<div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+<div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between"><h2 class="text-base sm:text-lg font-semibold text-emerald-900 flex items-center gap-2"><span id="formTitleText">แบบฟอร์มบันทึกข้อมูลสถานีขนถ่าย</span></h2><span class="text-xs text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full font-medium">กรอกข้อมูลตามจริง</span></div>
+<form id="reportForm" onsubmit="handleFormSubmit(event)" class="p-4 sm:p-6 space-y-6">
+<input type="hidden" id="editRowId" value="">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+<div class="space-y-1.5"><label for="stationSelect" class="block text-xs sm:text-sm font-medium text-slate-700">สถานีขนถ่าย (43 สถานี) <span class="text-rose-500">*</span></label><div class="relative"><select id="stationSelect" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all pr-8"><option value="" disabled selected>-- เลือกสถานีขนถ่าย --</option></select></div></div>
+<div class="space-y-1.5"><label for="reportDate" class="block text-xs sm:text-sm font-medium text-slate-700">วันที่บันทึก (พ.ศ. ไทย) <span class="text-rose-500">*</span></label><input type="date" id="reportDate" required onchange="updateThaiDateDisplay(this.value)" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all"><p id="thaiDatePreview" class="text-xs text-emerald-700 font-medium pl-1">รูปแบบ: -</p></div>
+<div class="space-y-1.5"><label for="timeSlot" class="block text-xs sm:text-sm font-medium text-slate-700">ช่วงเวลา <span class="text-rose-500">*</span></label><div class="relative"><select id="timeSlot" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all pr-8"><option value="" disabled selected>-- เลือกช่วงเวลา --</option><option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option><option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option><option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option><option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option><option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option><option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option><option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option><option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option><option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option><option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option><option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option><option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option></select></div></div>
+</div>
+<div class="space-y-2"><label class="block text-xs sm:text-sm font-medium text-slate-700">สถานะการทำงาน <span class="text-rose-500">* (เลือกได้ 1 - 2 อย่าง)</span></label><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-emerald-200 bg-emerald-50/50 rounded-xl cursor-pointer hover:bg-emerald-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="ปกติ" checked onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-emerald-900">ปกติ</span><div class="absolute inset-0 border-2 border-emerald-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-amber-200 bg-amber-50/50 rounded-xl cursor-pointer hover:bg-amber-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดรอรถ" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-amber-900">หยุดรอรถ</span><div class="absolute inset-0 border-2 border-amber-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-blue-200 bg-blue-50/50 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดรออ้อย" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-blue-900">หยุดรออ้อย</span><div class="absolute inset-0 border-2 border-blue-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-rose-200 bg-rose-50/50 rounded-xl cursor-pointer hover:bg-rose-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="หยุดไม่ทราบสาเหตุ" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-rose-900">หยุดไม่ทราบสาเหตุ</span><div class="absolute inset-0 border-2 border-rose-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-slate-200 bg-slate-100/60 rounded-xl cursor-pointer hover:bg-slate-200/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="offline" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-slate-700">offline</span><div class="absolute inset-0 border-2 border-slate-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label><label class="status-option-label relative flex flex-col items-center justify-center p-3 border-2 border-purple-200 bg-purple-50/50 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-all text-center group"><input type="checkbox" name="stationStatus" value="ปิดเครน" onchange="limitStatusSelection(this)" class="sr-only peer"><span class="text-xs font-semibold text-purple-900">ปิดเครน</span><div class="absolute inset-0 border-2 border-purple-600 rounded-xl hidden peer-checked:block pointer-events-none"></div></label></div></div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2"><label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">1. รูปตาชั่ง</label><span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span></div>
+<div id="scalePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group"><img id="scaleImagePreview" src="" alt="รูปตาชั่ง" class="w-full h-48 object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"><button type="button" onclick="downloadImage('scale')" class="px-3 py-2 text-xs font-medium bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป">ดาวน์โหลด</button><button type="button" onclick="removeImage('scale')" class="px-3 py-2 text-xs font-medium bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป">ลบรูป</button></div></div>
+<div id="scaleUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer"><input type="file" id="scaleImageInput" accept="image/*" onchange="handleImageSelect(event, 'scale')" class="hidden"><label for="scaleImageInput" class="cursor-pointer flex flex-col items-center"><span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปตาชั่ง</span><span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span></label></div></div><div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2"><label class="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">2. รูปเครน</label><span class="text-[10px] text-slate-500 font-light">รองรับ JPG, PNG</span></div>
+<div id="cranePreviewContainer" class="hidden relative rounded-xl overflow-hidden mb-3 border border-slate-200 bg-slate-900 group"><img id="craneImagePreview" src="" alt="รูปเครน" class="w-full h-48 object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"><button type="button" onclick="downloadImage('crane')" class="px-3 py-2 text-xs font-medium bg-white text-slate-800 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors" title="ดาวน์โหลดรูป"></button><button type="button" onclick="removeImage('crane')" class="px-3 py-2 text-xs font-medium bg-white text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="ลบรูป"></button></div></div>
+<div id="craneUploadArea" class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center bg-white hover:bg-emerald-50/50 transition-colors cursor-pointer"><input type="file" id="craneImageInput" accept="image/*" onchange="handleImageSelect(event, 'crane')" class="hidden"><label for="craneImageInput" class="cursor-pointer flex flex-col items-center"><span class="text-xs font-medium text-slate-600">คลิกเพื่ออัปโหลดรูปเครน</span><span class="text-[10px] text-slate-400 mt-0.5">ย่อและบีบอัดไฟล์อัตโนมัติ</span></label></div></div></div>
+<div class="space-y-1.5"><label for="noteInput" class="block text-xs sm:text-sm font-medium text-slate-700">หมายเหตุเพิ่มเติม (ถ้ามี)</label><input type="text" id="noteInput" placeholder="ระบุรายละเอียดเพิ่มเติม..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 transition-all"></div>
+<div class="flex items-center justify-end gap-3 pt-2"><button type="button" onclick="resetForm()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-medium transition-colors">ล้างฟอร์ม</button><button type="submit" id="btnSubmitForm" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"><span id="submitBtnText">บันทึกข้อมูลรายงาน</span></button></div>
+</form></div></section>
+<section id="tab-dashboard-content" class="hidden space-y-6">
+<div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="flex items-center gap-2 text-emerald-900 font-semibold text-sm"><span>ตัวกรองสรุปข้อมูลรายวัน:</span></div><select id="dailyFilterSelect" onchange="handleDailyFilterChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 font-medium min-w-[220px]"><option value="ALL">-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --</option></select></div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5"><div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">รายงานทั้งหมด</p><h3 id="kpiTotalReports" class="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">0</h3><span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">ฉบับ</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">เปิดใช้งานปกติ</p><h3 id="kpiNormalCount" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">0</h3><span class="text-[10px] text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-amber-100 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">หยุดชั่วคราว / มีปัญหา</p><h3 id="kpiIssueCount" class="text-2xl sm:text-3xl font-bold text-amber-600 mt-1">0</h3><span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div><div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 font-medium">Offline / ปิดเครน</p><h3 id="kpiOfflineCount" class="text-2xl sm:text-3xl font-bold text-slate-600 mt-1">0</h3><span class="text-[10px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">สถานี</span></div></div></div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<div class="lg:col-span-5 min-w-0 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">สัดส่วนสถานะการทำงาน</h3><span class="text-[11px] text-slate-400">ตามสถานะล่าสุดของแต่ละสถานี</span></div><div class="relative w-full h-64"><canvas id="statusDoughnutChart"></canvas></div></div>
+<div class="lg:col-span-7 min-w-0 bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between mb-4"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">ติดตามสถานะตามช่วงเวลา (08:00 - 20:00 น.)</h3><span class="text-[11px] text-slate-400">จำแนกตามสถานะ</span></div><div class="relative w-full h-64"><canvas id="hourlyLineChart"></canvas></div></div>
+</div>
+<div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-100 pb-3"><div><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">สถานะล่าสุดของ 43 สถานีขนถ่าย</h3><p class="text-xs text-slate-500">แสดงสถานะล่าสุดที่ถูกบันทึกเข้ามาของแต่ละสถานี</p></div><div class="flex flex-wrap gap-2 text-[11px]"><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ปกติ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> รอรถ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> รออ้อย</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> ไม่ทราบสาเหตุ</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Offline</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> ปิดเครน</span><span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span> ยังไม่มีรายงาน</span></div></div>
+<div id="stationsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 max-h-96 overflow-y-auto pr-1"></div>
+</div></section>
+<section id="tab-table-content" class="hidden space-y-6">
+<div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+<div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+<div><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">รายการรายงานที่เคยบันทึกไว้</h3><p class="text-xs text-slate-500">แสดงข้อมูลย้อนหลัง และรูปภาพจากสถานีขนาด 5x5 ซม.</p></div>
+<div class="flex flex-wrap items-center gap-2">
+<div class="relative min-w-[150px]"><select id="tableDateFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 font-medium focus:ring-emerald-500 focus:border-emerald-500"><option value="ALL">-- ทุกวันที่ --</option></select></div>
+<div class="relative min-w-[160px]"><select id="tableTimeSlotFilter" onchange="renderDataTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 pr-7 font-medium focus:ring-emerald-500 focus:border-emerald-500"><option value="ALL">-- ทุกช่วงเวลา --</option><option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option><option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option><option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option><option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option><option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option><option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option><option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option><option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option><option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option><option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option><option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option><option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option></select></div>
+<div class="relative min-w-[150px]"><input type="text" id="searchInput" oninput="renderDataTable()" placeholder="ค้นหาสถานี..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl pl-3 pr-3 py-2 focus:ring-emerald-500 focus:border-emerald-500"></div>
+<button onclick="loadDataFromBackend()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5"><span>รีเฟรชข้อมูล</span></button>
+</div></div>
+<div class="overflow-x-auto"><table class="w-full text-left text-xs sm:text-sm text-slate-600"><thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-[11px] border-b border-slate-200"><tr><th class="py-3 px-4">วัน/เวลา</th><th class="py-3 px-4">สถานีขนถ่าย</th><th class="py-3 px-4">ช่วงเวลา</th><th class="py-3 px-4">สถานะ</th><th class="py-3 px-4 text-center">รูปภาพประกอบ (ขนาด 5x5 ซม.)</th><th class="py-3 px-4">หมายเหตุ</th><th class="py-3 px-4 text-center">จัดการ</th></tr></thead><tbody id="dataTableBody" class="divide-y divide-slate-100"></tbody></table></div>
+</div></section>
+</main>
+</div>
+<div id="photoModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-3 border border-slate-200">
+<div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between"><h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><span id="photoModalTitle">รูปภาพ</span></h3><button onclick="closePhotoModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">✕</button></div>
+<div class="p-4 flex items-center justify-center bg-slate-900 min-h-[300px]"><img id="photoModalImg" src="" alt="Enlarged photo" class="max-h-[70vh] object-contain rounded-lg"></div>
+<div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2"><a id="photoModalDownloadBtn" download="station_photo.jpg" href="#" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">ดาวน์โหลดรูปภาพ</a><button onclick="closePhotoModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-medium">ปิด</button></div>
+</div></div>
+<div id="apiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-emerald-100">
+<div class="flex items-center justify-between border-b border-slate-100 pb-3"><h3 class="text-base font-bold text-slate-800 flex items-center gap-2">ตั้งค่า Google Apps Script Web App</h3><button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600">✕</button></div>
+<p class="text-xs text-slate-500 leading-relaxed">วาง Web App URL ของ Google Apps Script เพื่อบันทึกข้อมูลลง Google Sheets และอัปโหลดรูปภาพลง Google Drive โดยตรง</p>
+<div class="space-y-1.5"><label class="block text-xs font-medium text-slate-700">Web App URL</label><input type="url" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500"></div>
+<div class="flex justify-end gap-2 pt-2"><button onclick="closeApiModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl">ยกเลิก</button><button onclick="saveApiUrl()" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">บันทึกการตั้งค่า</button></div>
+</div></div>
+<div id="deleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-rose-100">
+<div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl mx-auto font-bold">!</div>
+<div class="text-center space-y-1"><h3 class="text-base font-bold text-slate-800">ยืนยันการลบข้อมูล</h3><p class="text-xs text-slate-500">คุณแน่ใจหรือไม่ว่าต้องการลบรายการรายงานนี้? ข้อมูลในระบบและ Google Sheets จะถูกลบออกทันที</p></div>
+<div class="flex items-center gap-3 pt-2"><button onclick="closeDeleteModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors">ยกเลิก</button><button onclick="confirmDeleteRecord()" class="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-md shadow-rose-600/20 transition-colors">ยืนยันการลบ</button></div>
+</div></div>
+<div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700"><span id="toastIcon" class="text-emerald-400 text-lg font-bold">✓</span><span id="toastMessage" class="text-xs sm:text-sm font-medium">ข้อความแจ้งเตือน</span></div>
+<div id="loadingOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center text-white"><div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div><p class="text-sm font-medium tracking-wide">กำลังประมวลผลข้อมูล...</p></div>
+<script>
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKTnmtmO5TErA1rZi304N-RErWT3TqLv_XJ0j41PUBQboSeJfKcG7zfdSEC8wFOXR7/exec";
 
 const STATIONS = [
     "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่", "เครนวังโพธิ์(บ้านเหลื่อม1)",
@@ -655,6 +140,7 @@ let images = { scale: null, crane: null };
 let doughnutChart = null;
 let lineChart = null;
 let toastTimer = null;
+let dashboardFilterTouched = false;
 
 // ---------- Helpers ----------
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -670,6 +156,16 @@ function getThaiDateString(isoDateVal) {
     return `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
 }
 
+function toLocalIsoDate(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function thaiToIso(t) {
     const m = String(t || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     return m ? `${parseInt(m[3]) - 543}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
@@ -679,11 +175,11 @@ function thaiToIso(t) {
 function normalizeRecord(r) {
     const rec = { ...r };
     rec.id = String(rec.id ?? ('REP-' + Date.now() + Math.random().toString(36).slice(2, 6)));
-    rec.station = rec.station || '';
+    rec.station = String(rec.station || '').trim();
     rec.status = Array.isArray(rec.status) ? rec.status.join(', ') : String(rec.status || '');
-    rec.timeSlot = rec.timeSlot || '';
-    rec.isoDate = String(rec.isoDate || '').slice(0, 10) || thaiToIso(rec.thaiDate);
-    rec.thaiDate = rec.thaiDate || (rec.isoDate ? getThaiDateString(rec.isoDate) : '');
+    rec.timeSlot = String(rec.timeSlot || '').trim();
+    rec.isoDate = toLocalIsoDate(rec.isoDate) || thaiToIso(rec.thaiDate);
+    rec.thaiDate = rec.isoDate ? getThaiDateString(rec.isoDate) : (rec.thaiDate || '');
     return rec;
 }
 
@@ -750,12 +246,13 @@ function showToast(message, type = 'success') {
     const msg = document.getElementById('toastMessage');
     if (!toast) return;
     const styles = {
-        success: ['fa-circle-check', 'text-emerald-400'],
-        error: ['fa-circle-xmark', 'text-rose-400'],
-        info: ['fa-circle-info', 'text-sky-400']
+        success: ['✓', 'text-emerald-400'],
+        error: ['✕', 'text-rose-400'],
+        info: ['i', 'text-sky-400']
     };
     const [ic, col] = styles[type] || styles.info;
-    icon.className = `fa-solid ${ic} ${col} text-lg`;
+    icon.className = `${col} text-lg font-bold`;
+    icon.textContent = ic;
     msg.textContent = message;
     toast.classList.remove('translate-y-20', 'opacity-0');
     toast.classList.add('translate-y-0', 'opacity-100');
@@ -836,7 +333,7 @@ function handleImgError(img) {
 }
 
 function placeholderHtml(text, icon) {
-    return `<div style="width:5cm;height:5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid ${icon} text-lg mb-1"></i><span>${text}</span></div>`;
+    return `<div style="width:5cm;height:5cm;" class="bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 text-xs"><span>${text}</span></div>`;
 }
 
 // ---------- Form ----------
@@ -927,6 +424,9 @@ function populateDailyFilterOptions() {
     const dateMap = new Map(reportsData.filter(r => r.thaiDate).map(r => [r.thaiDate, r.isoDate || '']));
     const dates = [...dateMap.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(e => e[0]);
 
+    // Dashboard เริ่มต้นที่ "วันที่ล่าสุดที่มีรายงาน" จนกว่าผู้ใช้จะเลือกเอง
+    if (!dashboardFilterTouched && dates.length) selectedDailyFilter = dates[0];
+
     [['dailyFilterSelect', '-- สรุปข้อมูลทั้งหมด (ทุกวันที่) --', selectedDailyFilter],
      ['tableDateFilter', '-- ทุกวันที่ --', null]].forEach(([id, label, keep]) => {
         const sel = document.getElementById(id);
@@ -940,6 +440,7 @@ function populateDailyFilterOptions() {
 }
 
 function handleDailyFilterChange(val) {
+    dashboardFilterTouched = true;
     selectedDailyFilter = val;
     updateDashboard();
 }
@@ -952,7 +453,7 @@ function getFilteredReports() {
 function getSingleBadgeHtml(status) {
     const st = STATUS_STYLE[status];
     if (!st) return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${escapeHtml(status)}</span>`;
-    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${st.badge}"><i class="fa-solid fa-circle text-[8px] ${st.dot}"></i> ${status}</span>`;
+    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${st.badge}"><span class="w-1.5 h-1.5 rounded-full ${st.dotBg}"></span> ${status}</span>`;
 }
 
 function getStatusBadge(status) {
@@ -984,7 +485,7 @@ function renderDataTable() {
         .sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
 
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-light"><i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>ไม่พบข้อมูลรายการที่เลือก</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-light">ไม่พบข้อมูลรายการที่เลือก</td></tr>`;
         return;
     }
 
@@ -1006,8 +507,8 @@ function renderDataTable() {
             <td class="py-3 px-4 max-w-xs truncate text-slate-500" title="${escapeHtml(item.note || '')}">${escapeHtml(item.note || '-')}</td>
             <td class="py-3 px-4 text-center whitespace-nowrap">
                 <div class="flex items-center justify-center gap-1">
-                    <button onclick="editRecord('${escapeHtml(item.id)}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
-                    <button onclick="promptDeleteRecord('${escapeHtml(item.id)}')" class="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="editRecord('${escapeHtml(item.id)}')" class="px-2 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-xl transition-colors" title="แก้ไข">แก้ไข</button>
+                    <button onclick="promptDeleteRecord('${escapeHtml(item.id)}')" class="px-2 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบ">ลบ</button>
                 </div>
             </td>
         </tr>`).join('');
@@ -1063,15 +564,17 @@ function updateDashboard() {
     const data = getFilteredReports();
     const latestMap = getLatestByStation(data);
     const latest = Object.values(latestMap).filter(r => STATIONS.includes(r.station));
+    const noReport = STATIONS.length - latest.length;
 
-    // KPI: total = reports, others = stations (by latest report of each station)
     setText('kpiTotalReports', data.length);
     setText('kpiNormalCount', latest.filter(r => hasAny(r, ['ปกติ'])).length);
     setText('kpiIssueCount', latest.filter(r => hasAny(r, ISSUE_STATUSES)).length);
     setText('kpiOfflineCount', latest.filter(r => hasAny(r, OFFLINE_STATUSES)).length);
 
+    // โดนัท: นับตามสถานะล่าสุดของแต่ละสถานี + สถานีที่ยังไม่มีรายงาน (ตรงกับการ์ด KPI และตาราง 43 สถานี)
     if (doughnutChart) {
-        doughnutChart.data.datasets[0].data = STATUS_LIST.map(s => data.filter(r => parseStatuses(r.status).includes(s)).length);
+        const counts = STATUS_LIST.map(s => latest.filter(r => parseStatuses(r.status).includes(s)).length);
+        doughnutChart.data.datasets[0].data = [...counts, noReport];
         doughnutChart.update();
     }
 
@@ -1093,8 +596,8 @@ function initCharts() {
     doughnutChart = new Chart(document.getElementById('statusDoughnutChart').getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: STATUS_LIST,
-            datasets: [{ data: STATUS_LIST.map(() => 0), backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff' }]
+            labels: [...STATUS_LIST, 'ยังไม่มีรายงาน'],
+            datasets: [{ data: [...STATUS_LIST.map(() => 0), 0], backgroundColor: [...colors, '#E2E8F0'], borderWidth: 2, borderColor: '#ffffff' }]
         },
         options: {
             responsive: true,
@@ -1234,6 +737,7 @@ function loadLocalData() {
         reportsData = [];
     }
 }
-    </script>
+
+</script>
 </body>
 </html>
