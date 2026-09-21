@@ -1,1651 +1,1326 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สถานการณ์สถานีขนถ่ายอ้อย โรงงานน้ำตาลราชสีมา 2569/70</title>
+  <title>ระบบบันทึกและวิเคราะห์สถานการณ์เครน</title>
   
-  <!-- CSS Dependencies -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- JS Dependencies -->
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Dashboards -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Prompt -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      --mint-dark: #1b4d3e;
-      --mint-primary: #2e7d62;
-      --mint-medium: #4caf50;
-      --mint-light: #a3e635;
-      --mint-bg: #f0fdf4;
-      --mint-card-bg: #ffffff;
-      --mint-border: #bbf7d0;
-      
-      --status-normal: #10b981;
-      --status-truck: #f59e0b;
-      --status-cane: #f97316;
-      --status-unknown: #ef4444;
-      --status-offline: #6b7280;
-      --status-crane: #4b5563;
-    }
-
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background-color: var(--mint-bg);
-      color: #333333;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .navbar-mint {
-      background-color: var(--mint-dark);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .navbar-brand {
-      color: #ffffff !important;
-      font-weight: 700;
-      font-size: 1.15rem;
-    }
-
-    .nav-link {
-      color: #e2e8f0 !important;
-      border-radius: 6px;
-      padding: 0.5rem 0.8rem !important;
-      margin: 0 0.2rem;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-
-    .nav-link:hover, .nav-link.active {
-      background-color: var(--mint-primary);
-      color: #ffffff !important;
-      font-weight: 600;
-    }
-
-    .card-mint {
-      background: var(--mint-card-bg);
-      border: 1px solid var(--mint-border);
-      border-radius: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-      margin-bottom: 1.25rem;
-    }
-
-    .card-mint .card-header {
-      background-color: #f8fafc;
-      border-bottom: 1px solid var(--mint-border);
-      font-weight: 600;
-      color: var(--mint-dark);
-      border-radius: 12px 12px 0 0;
-    }
-
-    .stat-card {
-      border-radius: 10px;
-      padding: 1rem;
-      color: white;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card .count {
-      font-size: 1.8rem;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    .stat-card .label {
-      font-size: 0.85rem;
-      opacity: 0.9;
-    }
-
-    .stat-card .icon-bg {
-      position: absolute;
-      right: 10px;
-      bottom: -5px;
-      font-size: 3rem;
-      opacity: 0.15;
-    }
-
-    .bg-normal { background-color: var(--status-normal); }
-    .bg-truck { background-color: var(--status-truck); }
-    .bg-cane { background-color: var(--status-cane); }
-    .bg-unknown { background-color: var(--status-unknown); }
-    .bg-offline { background-color: var(--status-offline); }
-    .bg-crane { background-color: var(--status-crane); }
-
-    .badge-status {
-      font-size: 0.75rem;
-      padding: 0.35em 0.65em;
-      border-radius: 6px;
-      font-weight: 500;
-      margin-right: 2px;
-      margin-bottom: 2px;
-      display: inline-block;
-    }
-
-    .btn-mint {
-      background-color: var(--mint-primary);
-      color: white;
-      border: none;
-    }
-    .btn-mint:hover {
-      background-color: var(--mint-dark);
-      color: white;
-    }
-
-    .img-preview-box {
-      width: 100%;
-      height: 160px;
-      border: 2px dashed #cbd5e1;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      background-color: #f8fafc;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .img-preview-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .overlay-loading {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10000;
-    }
-
-    .table-responsive {
-      border-radius: 8px;
-    }
-
-    .thumb-img {
-      width: 45px;
-      height: 45px;
-      object-fit: cover;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1px solid #e2e8f0;
-      transition: transform 0.2s;
-    }
-    .thumb-img:hover {
-      transform: scale(1.1);
-    }
-
-    .empty-state {
-      padding: 3rem;
-      text-align: center;
-      color: #94a3b8;
-    }
-    
-    .empty-state i {
-      font-size: 3.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .checkbox-card {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background-color: #ffffff;
-    }
-    .checkbox-card:hover {
-      border-color: var(--mint-primary);
-      background-color: #f0fdf4;
-    }
-    .checkbox-card input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: var(--mint-primary);
-    }
+    body { font-family: 'Prompt', sans-serif; }
+    .status-badge-ปกติ { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .status-badge-หยุดรอรถ { background-color: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+    .status-badge-หยุดรออ้อย { background-color: #ffedd5; color: #9a3412; border: 1px solid #fdba74; }
+    .status-badge-หยุดไม่ทราบสาเหตุ { background-color: #ffe4e6; color: #9f1239; border: 1px solid #fda4af; }
+    .status-badge-offline { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .status-badge-ปิดเครน { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
   </style>
 </head>
-<body>
+<body class="h-full text-slate-800 antialiased flex flex-col selection:bg-brand-500 selection:text-white">
 
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="overlay-loading d-none">
-    <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
-    <h5 id="loadingText" class="fw-bold text-success">กำลังโหลดข้อมูล...</h5>
-  </div>
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <div class="bg-brand-500 p-2 rounded-xl text-white shadow-md">
+            <i class="fa-solid font-bold fa-truck-ramp-box text-xl"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight tracking-wide">ระบบบันทึกสถานการณ์เครน</h1>
+            <p class="text-xs text-slate-400"> Google Sheet ID: <span class="text-brand-300 font-mono">1-awHtb...1U</span></p>
+          </div>
+        </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
+        <div class="flex items-center space-x-3">
+          <button id="connectionStatusBtn" onclick="openConfigModal()" class="px-3 py-1.5 rounded-full text-xs font-medium flex items-center space-x-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="statusText">ยังไม่ได้เชื่อมต่อ Web App</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-dark navbar-mint sticky-top">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#"><i class="fa-solid fa-industry me-2"></i>โรงงานน้ำตาลราชสีมา 2569/70</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link active" id="navDash" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="navRecord" onclick="switchTab('record')"><i class="fa-solid fa-pen-to-square me-1"></i> บันทึกสถานการณ์</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="navTable" onclick="switchTab('table')"><i class="fa-solid fa-table me-1"></i> ตารางข้อมูล</a>
-          </li>
-        </ul>
+  <nav class="bg-white border-b border-slate-200 sticky top-16 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-2 overflow-x-auto py-2 scrollbar-none">
+        <button onclick="switchTab('record')" id="tab-record" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition bg-brand-600 text-white shadow-sm">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition text-slate-600 hover:bg-slate-100">
+          <i class="fa-solid fa-chart-column"></i>
+          <span>สรุปและกราฟวิเคราะห์</span>
+        </button>
+        <button onclick="switchTab('history')" id="tab-history" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition text-slate-600 hover:bg-slate-100">
+          <i class="fa-solid fa-table-list"></i>
+          <span>รายการบันทึกทั้งหมด</span>
+          <span id="recordBadge" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+        <button onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition text-slate-600 hover:bg-slate-100">
+          <i class="fa-solid fa-code"></i>
+          <span>โค้ด Code.gs & วิธีแก้ไข</span>
+        </button>
       </div>
     </div>
   </nav>
 
-  <!-- Main Container -->
-  <div class="container-fluid py-3 flex-grow-1">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    <!-- PAGE 1: DASHBOARD -->
-    <div id="pageDashboard">
-      <div class="card-mint p-3 mb-3">
-        <div class="row align-items-center g-2">
-          <div class="col-md-6">
-            <h4 class="fw-bold text-success mb-0"><i class="fa-solid fa-chart-line me-2"></i>รายงานสถานการณ์สถานีขนถ่ายอ้อย</h4>
-            <small class="text-muted">ปีการผลิต 2569/70 | ข้อมูลแบบ Real-time</small>
+    <!-- TAB 1: FORM RECORD DATA -->
+    <section id="sec-record" class="space-y-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 text-white flex justify-between items-center">
+          <div>
+            <h2 class="text-lg font-bold flex items-center space-x-2">
+              <i class="fa-solid fa-circle-plus text-brand-400"></i>
+              <span id="formTitle">แบบฟอร์มบันทึกสถานการณ์เครน</span>
+            </h2>
+            <p class="text-xs text-slate-300">กรอกข้อมูลสถานการณ์เครนประจำสถานีขนถ่ายเพื่อบันทึกลงใน Google Sheet & Drive</p>
           </div>
-          <div class="col-md-6 text-md-end">
-            <button class="btn btn-outline-success btn-sm" onclick="loadAllData()"><i class="fa-solid fa-rotate me-1"></i> รีเฟรชข้อมูล</button>
-          </div>
+          <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg border border-slate-500">
+            <i class="fa-solid fa-xmark mr-1"></i> ยกเลิกการแก้ไข
+          </button>
         </div>
-      </div>
 
-      <!-- Dashboard Filters -->
-      <div class="card-mint p-3 mb-3">
-        <div class="row g-2">
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">รูปแบบสรุป</label>
-            <select class="form-select form-select-sm" id="dashSummaryType" onchange="renderDashboard()">
-              <option value="all">สรุปทั้งหมด</option>
-              <option value="hourly">สรุปรายชั่วโมง</option>
-              <option value="daily">สรุปรายวัน</option>
-            </select>
-          </div>
-          <div class="col-md-2" id="dashDateGroup">
-            <label class="form-label small fw-bold">วันที่</label>
-            <input type="date" class="form-select form-select-sm" id="dashFilterDate" onchange="renderDashboard()">
-          </div>
-          <div class="col-md-2" id="dashTimeGroup">
-            <label class="form-label small fw-bold">ช่วงเวลา</label>
-            <select class="form-select form-select-sm" id="dashFilterTime" onchange="renderDashboard()">
-              <option value="">ทั้งหมด</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">สถานีขนถ่าย</label>
-            <select class="form-select form-select-sm" id="dashFilterStation" onchange="renderDashboard()">
-              <option value="">ทุกสถานี (43 สถานี)</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-bold">สถานการณ์</label>
-            <select class="form-select form-select-sm" id="dashFilterStatus" onchange="renderDashboard()">
-              <option value="">ทั้งหมด</option>
-              <option value="normal">ปกติ</option>
-              <option value="waitingTruck">หยุดรอรถ</option>
-              <option value="waitingCane">หยุดรออ้อย</option>
-              <option value="unknown">หยุดไม่ทราบสาเหตุ</option>
-              <option value="offline">Offline</option>
-              <option value="craneClosed">ปิดเครน</option>
-            </select>
-          </div>
-        </div>
-      </div>
+        <form id="recordForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-6">
+          <input type="hidden" id="recordId" value="">
 
-      <!-- Summary KPI Cards -->
-      <div class="row g-2 mb-3">
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-primary">
-            <div class="label">รายการทั้งหมด</div>
-            <div class="count" id="kpiTotalRecords">0</div>
-            <i class="fa-solid fa-list-check icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-normal">
-            <div class="label">ปกติ</div>
-            <div class="count" id="kpiNormal">0</div>
-            <i class="fa-solid fa-circle-check icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-truck">
-            <div class="label">หยุดรอรถ</div>
-            <div class="count" id="kpiTruck">0</div>
-            <i class="fa-solid fa-truck-front icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-cane">
-            <div class="label">หยุดรออ้อย</div>
-            <div class="count" id="kpiCane">0</div>
-            <i class="fa-solid fa-wheat-awn icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-unknown">
-            <div class="label">ไม่ทราบสาเหตุ</div>
-            <div class="count" id="kpiUnknown">0</div>
-            <i class="fa-solid fa-circle-question icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="stat-card bg-offline">
-            <div class="label">Offline / ปิดเครน</div>
-            <div class="count" id="kpiOfflineCrane">0</div>
-            <i class="fa-solid fa-power-off icon-bg"></i>
-          </div>
-        </div>
-      </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-      <!-- Charts Section -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-4">
-          <div class="card-mint h-100 p-3">
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-1"></i> สัดส่วนสถานการณ์</h6>
-            <div style="height: 260px; position: relative;">
-              <canvas id="chartPie"></canvas>
+            <!-- 1. สถานีขนถ่าย -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700">
+                <i class="fa-solid fa-warehouse text-brand-600 mr-1.5"></i> สถานีขนถ่าย <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select id="stationSelect" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white transition appearance-none">
+                  <option value="" disabled selected>-- เลือกสถานีขนถ่าย (43 สถานี) --</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <i class="fa-solid fa-chevron-down text-sm"></i>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="col-md-8">
-          <div class="card-mint h-100 p-3">
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-line me-1"></i> แนวโน้มสถานการณ์ตามช่วงเวลา</h6>
-            <div style="height: 260px; position: relative;">
-              <canvas id="chartLine"></canvas>
+
+            <!-- 2. วันที่บันทึก -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700">
+                <i class="fa-solid fa-calendar-day text-brand-600 mr-1.5"></i> วันที่บันทึกข้อมูล <span class="text-rose-500">*</span>
+              </label>
+              <input type="date" id="dateInput" required onchange="updateThaiDateDisplay()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-medium focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white transition">
+              <div class="bg-brand-50 rounded-lg p-2.5 border border-brand-100 flex items-center justify-between text-xs text-brand-900 font-medium">
+                <span><i class="fa-solid fa-flag text-brand-600 mr-1"></i> แสดงแบบไทย:</span>
+                <span id="thaiDateDisplay" class="font-bold text-brand-700 text-sm">-</span>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="card-mint p-3">
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-column me-1"></i> สถานการณ์แยกตามรายสถานี</h6>
-            <div style="height: 320px; position: relative;">
-              <canvas id="chartBar"></canvas>
+
+            <!-- 3. ช่วงเวลา -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700">
+                <i class="fa-solid fa-clock text-brand-600 mr-1.5"></i> ช่วงเวลา <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select id="timeSlotSelect" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white transition appearance-none">
+                  <option value="" disabled selected>-- เลือกช่วงเวลา --</option>
+                  <option value="08:00 - 09:00 น.">08:00 - 09:00 น.</option>
+                  <option value="09:00 - 10:00 น.">09:00 - 10:00 น.</option>
+                  <option value="10:00 - 11:00 น.">10:00 - 11:00 น.</option>
+                  <option value="11:00 - 12:00 น.">11:00 - 12:00 น.</option>
+                  <option value="12:00 - 13:00 น.">12:00 - 13:00 น.</option>
+                  <option value="13:00 - 14:00 น.">13:00 - 14:00 น.</option>
+                  <option value="14:00 - 15:00 น.">14:00 - 15:00 น.</option>
+                  <option value="15:00 - 16:00 น.">15:00 - 16:00 น.</option>
+                  <option value="16:00 - 17:00 น.">16:00 - 17:00 น.</option>
+                  <option value="17:00 - 18:00 น.">17:00 - 18:00 น.</option>
+                  <option value="18:00 - 19:00 น.">18:00 - 19:00 น.</option>
+                  <option value="19:00 - 20:00 น.">19:00 - 20:00 น.</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <i class="fa-solid fa-chevron-down text-sm"></i>
+                </div>
+              </div>
             </div>
+
           </div>
-        </div>
-      </div>
 
-      <!-- Summary Table -->
-      <div class="card-mint p-3">
-        <h6 class="fw-bold mb-3"><i class="fa-solid fa-table-cells me-1"></i> ตารางสรุปสถานการณ์</h6>
-        <div class="table-responsive">
-          <table class="table table-hover table-striped align-middle mb-0" id="dashSummaryTable">
-            <thead class="table-light">
-              <tr id="dashTableHeader">
-                <th>หัวข้อสรุป</th>
-                <th class="text-center">ปกติ</th>
-                <th class="text-center">หยุดรอรถ</th>
-                <th class="text-center">หยุดรออ้อย</th>
-                <th class="text-center">ไม่ทราบสาเหตุ</th>
-                <th class="text-center">Offline</th>
-                <th class="text-center">ปิดเครน</th>
-                <th class="text-center">รวมสถานการณ์</th>
-              </tr>
-            </thead>
-            <tbody id="dashTableBody">
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- PAGE 2: RECORD FORM -->
-    <div id="pageRecord" class="d-none">
-      <div class="row justify-content-center">
-        <div class="col-lg-10">
-          <div class="card-mint p-4">
-            <h4 class="fw-bold text-success mb-3 border-bottom pb-2">
-              <i class="fa-solid fa-pen-to-square me-2"></i>บันทึกสถานการณ์สถานีขนถ่าย
-            </h4>
+          <!-- 4. รายการสถานการณ์ (เลือกได้มากกว่า 1 รายการ) -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="block text-sm font-semibold text-slate-700">
+              <i class="fa-solid fa-traffic-light text-brand-600 mr-1.5"></i> เลือกสถานการณ์ (สามารถเลือกได้มากกว่า 1 รายการ) <span class="text-rose-500">*</span>
+            </label>
             
-            <form id="recordForm" onsubmit="handleFormSubmit(event)">
-              <input type="hidden" id="editRecordId" value="">
+            <input type="hidden" id="statusInput" required value="">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="statusGrid">
+              
+              <button type="button" onclick="toggleStatus('ปกติ')" data-status="ปกติ" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-circle-check"></i></span>
+                <span class="text-xs font-bold text-slate-700">ปกติ</span>
+              </button>
 
-              <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">วันที่ <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" id="formDateIso" required onchange="handleDateChange()">
-                  <small class="text-muted" id="formThaiDateShow">-</small>
+              <button type="button" onclick="toggleStatus('หยุดรอรถ')" data-status="หยุดรอรถ" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-truck"></i></span>
+                <span class="text-xs font-bold text-slate-700">หยุดรอรถ</span>
+              </button>
+
+              <button type="button" onclick="toggleStatus('หยุดรออ้อย')" data-status="หยุดรออ้อย" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-lg"><i class="fa-solid fa-wheat-awn"></i></span>
+                <span class="text-xs font-bold text-slate-700">หยุดรออ้อย</span>
+              </button>
+
+              <button type="button" onclick="toggleStatus('หยุดไม่ทราบสาเหตุ')" data-status="หยุดไม่ทราบสาเหตุ" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                <span class="text-xs font-bold text-slate-700">หยุดไม่ทราบสาเหตุ</span>
+              </button>
+
+              <button type="button" onclick="toggleStatus('offline')" data-status="offline" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-lg"><i class="fa-solid fa-wifi"></i></span>
+                <span class="text-xs font-bold text-slate-700">offline</span>
+              </button>
+
+              <button type="button" onclick="toggleStatus('ปิดเครน')" data-status="ปิดเครน" class="status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200">
+                <span class="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-lg"><i class="fa-solid fa-power-off"></i></span>
+                <span class="text-xs font-bold text-slate-700">ปิดเครน</span>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- 5. แนบรูปถ่าย (รูปตาชั่ง & รูปเครน) พร้อมระบบบีบอัดรูปถ่ายอัตโนมัติ -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+            
+            <!-- รูปตาชั่ง -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700">
+                <i class="fa-solid fa-weight-hanging text-brand-600 mr-1.5"></i> รูปถ่ายตาชั่ง (บีบอัดรูปให้อัตโนมัติ)
+              </label>
+              <div class="relative border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center hover:bg-slate-50 transition cursor-pointer group" onclick="document.getElementById('scaleImageFile').click()">
+                <input type="file" id="scaleImageFile" accept="image/*" class="hidden" onchange="compressAndPreviewImage(this, 'scalePreview')">
+                <div id="scalePreviewContainer" class="flex flex-col items-center justify-center space-y-2">
+                  <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 group-hover:text-brand-600 group-hover:bg-brand-50 flex items-center justify-center transition">
+                    <i class="fa-solid fa-camera text-xl"></i>
+                  </div>
+                  <p class="text-xs text-slate-600 font-medium">คลิกเพื่ออัปโหลด หรือ ถ่ายรูปตาชั่ง</p>
+                  <p class="text-[10px] text-slate-400">ระบบจะทำการย่อรูปเพื่อให้อัปโหลดลง Drive ได้รวดเร็ว</p>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">สถานีขนถ่าย <span class="text-danger">*</span></label>
-                  <select class="form-select" id="formStation" required>
-                    <option value="">-- เลือกสถานีขนถ่าย --</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">ช่วงเวลา <span class="text-danger">*</span></label>
-                  <select class="form-select" id="formTimeSlot" required>
-                    <option value="">-- เลือกช่วงเวลา --</option>
-                  </select>
-                </div>
+                <img id="scalePreview" src="" alt="พรีวิวรูปตาชั่ง" class="hidden max-h-48 rounded-lg mx-auto shadow-sm object-cover">
               </div>
+              <input type="hidden" id="scaleImageBase64" value="">
+            </div>
 
-              <!-- Status Selection Checkboxes -->
-              <div class="mb-4">
-                <label class="form-label fw-bold mb-2">
-                  สถานการณ์ <span class="text-danger">*</span> <small class="text-muted fw-normal">(เลือกได้มากกว่า 1 รายการ)</small>
-                </label>
-
-                <div class="row g-2">
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stNormal" class="me-2" onchange="handleStatusChange('normal')">
-                      <label for="stNormal" class="mb-0 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> ปกติ</label>
-                    </div>
+            <!-- รูปเครน -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700">
+                <i class="fa-solid fa-tower-observation text-brand-600 mr-1.5"></i> รูปถ่ายเครน (บีบอัดรูปให้อัตโนมัติ)
+              </label>
+              <div class="relative border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center hover:bg-slate-50 transition cursor-pointer group" onclick="document.getElementById('craneImageFile').click()">
+                <input type="file" id="craneImageFile" accept="image/*" class="hidden" onchange="compressAndPreviewImage(this, 'cranePreview')">
+                <div id="cranePreviewContainer" class="flex flex-col items-center justify-center space-y-2">
+                  <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 group-hover:text-brand-600 group-hover:bg-brand-50 flex items-center justify-center transition">
+                    <i class="fa-solid fa-camera text-xl"></i>
                   </div>
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stWaitingTruck" class="me-2" onchange="handleStatusChange('waitingTruck')">
-                      <label for="stWaitingTruck" class="mb-0 text-warning fw-bold"><i class="fa-solid fa-truck-front me-1"></i> หยุดรอรถ</label>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stWaitingCane" class="me-2" onchange="handleStatusChange('waitingCane')">
-                      <label for="stWaitingCane" class="mb-0 fw-bold" style="color: #f97316 !important;"><i class="fa-solid fa-wheat-awn me-1"></i> หยุดรออ้อย</label>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stUnknown" class="me-2" onchange="handleStatusChange('unknown')">
-                      <label for="stUnknown" class="mb-0 text-danger fw-bold"><i class="fa-solid fa-circle-question me-1"></i> หยุดไม่ทราบสาเหตุ</label>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stOffline" class="me-2" onchange="handleStatusChange('offline')">
-                      <label for="stOffline" class="mb-0 text-secondary fw-bold"><i class="fa-solid fa-wifi me-1"></i> Offline</label>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-4">
-                    <div class="checkbox-card d-flex align-items-center">
-                      <input type="checkbox" id="stCraneClosed" class="me-2" onchange="handleStatusChange('craneClosed')">
-                      <label for="stCraneClosed" class="mb-0 text-dark fw-bold"><i class="fa-solid fa-power-off me-1"></i> ปิดเครน</label>
-                    </div>
-                  </div>
+                  <p class="text-xs text-slate-600 font-medium">คลิกเพื่ออัปโหลด หรือ ถ่ายรูปเครน</p>
+                  <p class="text-[10px] text-slate-400">ระบบจะทำการย่อรูปเพื่อให้อัปโหลดลง Drive ได้รวดเร็ว</p>
                 </div>
+                <img id="cranePreview" src="" alt="พรีวิวรูปเครน" class="hidden max-h-48 rounded-lg mx-auto shadow-sm object-cover">
               </div>
+              <input type="hidden" id="craneImageBase64" value="">
+            </div>
 
-              <!-- Image File Uploads -->
-              <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">รูปภาพตาชั่ง <small class="text-muted">(JPG, PNG, WEBP &lt; 10MB)</small></label>
-                  <div class="img-preview-box" onclick="document.getElementById('fileScale').click()">
-                    <div id="previewScalePlaceholder" class="text-center p-2">
-                      <i class="fa-solid fa-weight-hanging fs-2 text-muted mb-1"></i>
-                      <div class="small text-muted">คลิกเพื่อเลือกรูปตาชั่ง</div>
-                    </div>
-                    <img id="previewScaleImg" src="" class="d-none" alt="รูปตาชั่ง">
-                  </div>
-                  <input type="file" id="fileScale" accept="image/*" class="d-none" onchange="handleFileSelect(event, 'Scale')">
-                  <button type="button" id="btnRemoveScale" class="btn btn-sm btn-outline-danger w-100 mt-2 d-none" onclick="removeImageSelection('Scale')">
-                    <i class="fa-solid fa-trash me-1"></i> ลบรูปตาชั่ง
-                  </button>
-                </div>
+          </div>
 
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">รูปภาพเครน <small class="text-muted">(JPG, PNG, WEBP &lt; 10MB)</small></label>
-                  <div class="img-preview-box" onclick="document.getElementById('fileCrane').click()">
-                    <div id="previewCranePlaceholder" class="text-center p-2">
-                      <i class="fa-solid fa-tower-observation fs-2 text-muted mb-1"></i>
-                      <div class="small text-muted">คลิกเพื่อเลือกรูปเครน</div>
-                    </div>
-                    <img id="previewCraneImg" src="" class="d-none" alt="รูปเครน">
-                  </div>
-                  <input type="file" id="fileCrane" accept="image/*" class="d-none" onchange="handleFileSelect(event, 'Crane')">
-                  <button type="button" id="btnRemoveCrane" class="btn btn-sm btn-outline-danger w-100 mt-2 d-none" onclick="removeImageSelection('Crane')">
-                    <i class="fa-solid fa-trash me-1"></i> ลบรูปเครน
-                  </button>
-                </div>
-              </div>
+          <!-- Submit Button -->
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+            <button type="button" onclick="resetForm()" class="px-5 py-3 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition">
+              รีเซ็ตฟอร์ม
+            </button>
+            <button type="submit" id="submitBtn" class="px-8 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition flex items-center space-x-2">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span id="submitBtnText">บันทึกข้อมูลลง Google Sheet</span>
+            </button>
+          </div>
 
-              <!-- Form Buttons -->
-              <div class="d-flex justify-content-end gap-2 border-top pt-3">
-                <button type="button" class="btn btn-light px-4" onclick="resetForm()"><i class="fa-solid fa-rotate-left me-1"></i> ล้างข้อมูล</button>
-                <button type="submit" class="btn btn-mint px-5"><i class="fa-solid fa-floppy-disk me-1"></i> บันทึกข้อมูล</button>
-              </div>
-            </form>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 2: DASHBOARD & CHARTS -->
+    <section id="sec-dashboard" class="space-y-6 hidden">
+      
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-filter text-brand-600"></i>
+          <h3 class="font-bold text-slate-800 text-sm">ตัวกรองรายงาน</h3>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Station Filter -->
+          <select id="dashStationFilter" onchange="renderDashboard()" class="bg-slate-50 border border-slate-300 text-xs rounded-xl px-3 py-2 text-slate-700 font-medium focus:ring-brand-500">
+            <option value="ALL">-- ทุกสถานีขนถ่าย --</option>
+          </select>
+
+          <!-- Time Range Mode -->
+          <select id="dashTimeMode" onchange="toggleDashTimeInputs()" class="bg-slate-50 border border-slate-300 text-xs rounded-xl px-3 py-2 text-slate-700 font-medium focus:ring-brand-500">
+            <option value="all">ข้อมูลทั้งหมด</option>
+            <option value="today">วันนี้</option>
+            <option value="month">เลือกรายเดือน</option>
+            <option value="year">เลือกรายปี</option>
+          </select>
+
+          <input type="month" id="dashMonthPicker" onchange="renderDashboard()" class="hidden bg-slate-50 border border-slate-300 text-xs rounded-xl px-3 py-1.5 text-slate-700">
+          <select id="dashYearPicker" onchange="renderDashboard()" class="hidden bg-slate-50 border border-slate-300 text-xs rounded-xl px-3 py-1.5 text-slate-700">
+            <option value="2026">พ.ศ. 2569 (2026)</option>
+            <option value="2025">พ.ศ. 2568 (2025)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Key Metrics Status Counters -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="metricsContainer">
+        <!-- Dynamic metrics cards -->
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Bar Chart -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+              <i class="fa-solid fa-chart-bar text-brand-600"></i>
+              <span>เปรียบเทียบจำนวนตามสถานการณ์</span>
+            </h4>
+          </div>
+          <div class="relative h-72">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Line Chart -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+              <i class="fa-solid fa-chart-line text-emerald-600"></i>
+              <span>แนวโน้มสถานการณ์ตามช่วงเวลา</span>
+            </h4>
+          </div>
+          <div class="relative h-72">
+            <canvas id="lineChart"></canvas>
           </div>
         </div>
       </div>
-    </div>
 
+    </section>
 
-    <!-- PAGE 3: DATA TABLE -->
-    <div id="pageTable" class="d-none">
-      <div class="card-mint p-3">
-        <h4 class="fw-bold text-success mb-3"><i class="fa-solid fa-table me-2"></i>รายการข้อมูลบันทึกทั้งหมด</h4>
+    <!-- TAB 3: DATA HISTORY TABLE -->
+    <section id="sec-history" class="space-y-6 hidden">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        <!-- Table Tools -->
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="relative w-full md:w-80">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" onkeyup="filterTableData()" placeholder="ค้นหาตามสถานี, ID, วันที่..." class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-brand-500 font-medium">
+          </div>
 
-        <!-- Filters -->
-        <div class="row g-2 mb-3">
-          <div class="col-md-2">
-            <input type="date" class="form-control form-control-sm" id="tblFilterDate" onchange="filterAndRenderTable()">
-          </div>
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" id="tblFilterTime" onchange="filterAndRenderTable()">
-              <option value="">ทุกช่วงเวลา</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select class="form-select form-select-sm" id="tblFilterStation" onchange="filterAndRenderTable()">
-              <option value="">ทุกสถานีขนถ่าย</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" id="tblFilterStatus" onchange="filterAndRenderTable()">
-              <option value="">ทุกสถานการณ์</option>
-              <option value="normal">ปกติ</option>
-              <option value="waitingTruck">หยุดรอรถ</option>
-              <option value="waitingCane">หยุดรออ้อย</option>
-              <option value="unknown">หยุดไม่ทราบสาเหตุ</option>
-              <option value="offline">Offline</option>
-              <option value="craneClosed">ปิดเครน</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <div class="input-group input-group-sm">
-              <input type="text" class="form-control" id="tblSearchText" placeholder="ค้นหา..." onkeyup="filterAndRenderTable()">
-              <button class="btn btn-outline-secondary" onclick="resetTableFilters()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+          <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+            <button onclick="fetchDataFromSheet()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 flex items-center space-x-1.5 shadow-sm">
+              <i class="fa-solid fa-rotate text-brand-600"></i>
+              <span>ดึงข้อมูลล่าสุด</span>
+            </button>
           </div>
         </div>
 
-        <!-- Table Responsive -->
-        <div class="table-responsive">
-          <table class="table table-hover table-bordered align-middle mb-0" id="mainDataTable">
-            <thead class="table-success">
-              <tr>
-                <th style="width: 110px;">วันที่</th>
-                <th style="width: 170px;">สถานี</th>
-                <th style="width: 130px;">ช่วงเวลา</th>
-                <th>สถานการณ์</th>
-                <th class="text-center" style="width: 80px;">รูปตาชั่ง</th>
-                <th class="text-center" style="width: 80px;">รูปเครน</th>
-                <th class="text-center" style="width: 110px;">จัดการ</th>
+        <!-- Table View -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-slate-300 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">วันที่ (ไทย)</th>
+                <th class="py-3 px-4">สถานีขนถ่าย</th>
+                <th class="py-3 px-4">ช่วงเวลา</th>
+                <th class="py-3 px-4">สถานการณ์</th>
+                <th class="py-3 px-4 text-center">รูปตาชั่ง (3×3 cm)</th>
+                <th class="py-3 px-4 text-center">รูปเครน (3×3 cm)</th>
+                <th class="py-3 px-4">วันที่บันทึก</th>
+                <th class="py-3 px-4 text-center">จัดการ</th>
               </tr>
             </thead>
-            <tbody id="tblBody">
+            <tbody id="tableBody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
             </tbody>
           </table>
         </div>
 
-        <!-- Pagination Controls -->
-        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="small text-muted">แสดง</span>
-            <select class="form-select form-select-sm" id="tblPageSize" style="width: 70px;" onchange="changePageSize()">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <span class="small text-muted" id="tblInfo">รายการ</span>
-          </div>
-          <nav>
-            <ul class="pagination pagination-sm mb-0" id="tblPagination">
+      </div>
+    </section>
+
+    <!-- TAB 4: SETUP GUIDE & TROUBLESHOOTING -->
+    <section id="sec-guide" class="space-y-6 hidden">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+        <div class="border-b border-slate-200 pb-4">
+          <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-wrench text-brand-600"></i>
+            <span>คู่มือแก้ปัญหาการบันทึกข้อมูล และ การตั้งค่า Apps Script</span>
+          </h3>
+          <p class="text-xs text-slate-500">ขั้นตอนแก้ไขหากบันทึกลง Google Sheet / Google Drive ไม่ได้</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 space-y-2">
+            <h4 class="font-bold text-sm flex items-center"><i class="fa-solid fa-circle-xmark mr-2 text-rose-600"></i>สาเหตุที่ทำให้บันทึกหรือดึงข้อมูลไม่ได้:</h4>
+            <ul class="list-disc list-inside space-y-1 text-slate-800">
+              <li>ยังไม่ได้อัปเดตโค้ดใน **Code.gs** ล่าสุดที่มีฟังก์ชัน `getData()`</li>
+              <li>ไม่ได้ตั้งค่า **Execute as: Me (ฉัน)** ทำให้ระบบไม่มีสิทธิ์อ่าน/เขียน Google Sheet</li>
+              <li>ไม่ได้ตั้งค่า **Who has access: Anyone (ทุกคน)** ทำให้เข้าถึงผ่าน Web App ไม่ได้</li>
             </ul>
-          </nav>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- MODAL 1: DUPLICATE OVERWRITE PROMPT -->
-  <div class="modal fade" id="modalDuplicate" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>พบข้อมูลซ้ำในระบบ</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0" id="modalDuplicateMsg">มีข้อมูลของสถานีและช่วงเวลานี้แล้วในระบบ</p>
-          <p class="text-muted small mt-2">คุณต้องการแก้ไขข้อมูลเดิมที่มีอยู่ หรือยกเลิกการบันทึก?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" class="btn btn-warning fw-bold" onclick="proceedOverwrite()"><i class="fa-solid fa-pen-to-square me-1"></i> แก้ไขข้อมูลเดิม</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL 2: IMAGE VIEWER / MANAGEMENT -->
-  <div class="modal fade" id="modalImageViewer" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="modalImgTitle">แสดงรูปภาพ</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body text-center bg-light">
-          <img id="modalImgPreview" src="" class="img-fluid rounded shadow-sm" style="max-height: 500px;" alt="Preview">
-          <input type="file" id="modalFileReplace" accept="image/*" class="d-none" onchange="handleReplaceImageUpload(event)">
-        </div>
-        <div class="modal-footer d-flex justify-content-between">
-          <div>
-            <button type="button" class="btn btn-outline-danger btn-sm me-1" onclick="executeImageDelete()"><i class="fa-solid fa-trash me-1"></i> ลบรูปภาพ</button>
-            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('modalFileReplace').click()"><i class="fa-solid fa-arrows-rotate me-1"></i> เปลี่ยนรูป</button>
           </div>
-          <div>
-            <a id="modalBtnDownload" href="#" target="_blank" class="btn btn-success btn-sm me-1" download><i class="fa-solid fa-download me-1"></i> ดาวน์โหลด</a>
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
+
+          <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 space-y-2">
+            <h4 class="font-bold text-sm flex items-center"><i class="fa-solid fa-circle-check mr-2 text-emerald-600"></i>วิธีอัปเดตแก้ไขโค้ด Apps Script:</h4>
+            <ol class="list-decimal list-inside space-y-1 text-slate-800">
+              <li>คัดลอกโค้ดจากกล่องด้านล่างไปวางแทนที่ในไฟล์ **Code.gs**</li>
+              <li>กดปุ่มบันทึก (Save 💾)</li>
+              <li>กด **การทำให้ใช้งานได้ (Deploy)** > **การทำให้ใช้งานได้รายการใหม่ (New deployment)**</li>
+              <li>ตั้งค่า **ผู้ที่มีสิทธิ์เข้าถึง: ทุกคน (Anyone)** และ **เรียกใช้ในฐานะ: ฉัน (Me)**</li>
+              <li>คัดลอก **Web App URL** ใหม่มาวางในระบบ</li>
+            </ol>
           </div>
         </div>
+
+        <div class="bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-xs overflow-x-auto space-y-2">
+          <div class="flex justify-between items-center text-slate-400 pb-2 border-b border-slate-800">
+            <span>Code.gs (Google Apps Script ฉบับปรับปรุง)</span>
+            <button onclick="copyCodeGs()" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded text-[11px]">
+              <i class="fa-regular fa-copy mr-1"></i> คัดลอกโค้ด
+            </button>
+          </div>
+          <pre id="codeGsBlock" class="text-slate-300 text-[11px] font-mono leading-normal"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: IMAGE PREVIEW -->
+  <div id="imageModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-4 relative shadow-2xl">
+      <button onclick="closeImageModal()" class="absolute -top-3 -right-3 bg-rose-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg hover:bg-rose-700">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h4 id="modalImageTitle" class="font-bold text-slate-800 text-sm mb-3">รูปภาพแนบ</h4>
+      <div class="bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center max-h-[70vh]">
+        <img id="modalImage" src="" class="max-h-[70vh] object-contain rounded-lg">
       </div>
     </div>
   </div>
 
-  <!-- JS Dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- MODAL: CONFIG WEB APP URL -->
+  <div id="configModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-base flex items-center space-x-2">
+          <i class="fa-solid fa-plug text-brand-600"></i>
+          <span>เชื่อมต่อ Google Apps Script Web App</span>
+        </h3>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        กรอก Web App URL ที่ได้จากการ Deploy ใน Google Apps Script เพื่อเปิดการบันทึกข้อมูลลงใน Google Sheet & Drive โดยตรง
+      </p>
+      <div class="space-y-1">
+        <label class="block text-xs font-semibold text-slate-700">Web App URL:</label>
+        <input type="url" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 font-mono">
+      </div>
+      <div class="flex justify-end space-x-3 pt-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">ยกเลิก</button>
+        <button onclick="saveConfigUrl()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition shadow-md">บันทึกการเชื่อมต่อ</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- MODAL: CONFIRM DELETE -->
+  <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100">
+      <div class="flex items-center space-x-3 text-rose-600">
+        <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-base">ยืนยันการลบข้อมูล</h3>
+      </div>
+      <p id="confirmModalText" class="text-xs text-slate-600 leading-relaxed"></p>
+      <div class="flex justify-end space-x-3 pt-2">
+        <button onclick="closeConfirmModal(false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">ยกเลิก</button>
+        <button id="confirmModalOkBtn" onclick="closeConfirmModal(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition shadow-md">ยืนยันลบ</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // System Constants & Config
-    const ALLOW_NORMAL_WITH_OTHER_STATUS = false;
-    
-    const CONFIG_STATIONS = [
+    const SPREADSHEET_ID = "1-awHtb20d-i5z78u1X8eJQjG-42f65R967c3aZj8_1U";
+
+    const STATIONS = [
       "เครนขามสะแกแสง1", "เครนขามสะแกแสง2", "เครนคูเมือง", "เครนซับใหญ่",
-      "เครนวังโพธิ์(บ้านเหลื่อม1)", "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน", "เครนทำนบ 2",
-      "เครนทำนบพัฒนา", "เครนนาเสียว", "เครนเนินสง่า", "เครนบ้านเขว้า1",
-      "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1", "เครนบ้านค่าย 2",
-      "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา", "เครนรกฟ้า",
-      "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2", "เครนหนองโคบาล",
-      "เครนหนองบัวแดง", "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2", "เครนหนองบัวลาย",
-      "เครนหนองพลวง", "เครนหนองแวง", "เครนหนองหอย", "เครนหนองหัวฟาน",
-      "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง", "เครนท่าหินโงม",
-      "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4", "เครนภูแลนคา 2",
-      "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
+      "เครนวังโพธิ์(บ้านเหลื่อม1)", "เครนดอนทอง(บ้านเหลื่อม2)", "เครนดอนหัน",
+      "เครนทำนบ 2", "เครนทำนบพัฒนา", "เครนนาเสียว", "เครนเนินสง่า",
+      "เครนบ้านเขว้า1", "เครนบ้านเขว้า2", "เครนบ้านเขว้า3", "เครนบ้านค่าย 1",
+      "เครนบ้านค่าย 2", "เครนบ้านเดื่อ", "เครนบ้านปรางค์", "เครนภูแลนคา",
+      "เครนรกฟ้า", "เครนวังชมภู", "เครนสระสี่เหลี่ยม 1", "เครนสระสี่เหลี่ยม2",
+      "เครนหนองโคบาล", "เครนหนองบัวแดง", "เครนหนองบัวระเหว", "เครนหนองบัวระเหว2",
+      "เครนหนองบัวลาย", "เครนหนองพลวง", "เครนหนองแวง", "เครนหนองหอย",
+      "เครนหนองหัวฟาน", "เครนห้วยต้อน", "เครนห้วยไร่", "เครนหินกอง",
+      "เครนท่าหินโงม", "เครนเนินสง่า 2", "เครนโนนตาลเสี้ยน", "เครนบ้านเขว้า 4",
+      "เครนภูแลนคา 2", "เครนสงแดง", "เครนหนองม่วงช่างพิมพ์", "เครนจัตุรัส"
     ];
 
-    const CONFIG_TIME_SLOTS = [
-      "08:00 - 09:00 น.", "09:00 - 10:00 น.", "10:00 - 11:00 น.", "11:00 - 12:00 น.",
-      "12:00 - 13:00 น.", "13:00 - 14:00 น.", "14:00 - 15:00 น.", "15:00 - 16:00 น.",
-      "16:00 - 17:00 น.", "17:00 - 18:00 น.", "18:00 - 19:00 น.", "19:00 - 20:00 น."
-    ];
+    const STATUSES = ["ปกติ", "หยุดรอรถ", "หยุดรออ้อย", "หยุดไม่ทราบสาเหตุ", "offline", "ปิดเครน"];
 
-    // Status mapping for visual styling & chart colors
-    const STATUS_MAP = {
-      normal: { name: "ปกติ", class: "bg-normal", textClass: "text-success", color: "#10b981", icon: "fa-circle-check" },
-      waitingTruck: { name: "หยุดรอรถ", class: "bg-truck", textClass: "text-warning", color: "#f59e0b", icon: "fa-truck-front" },
-      waitingCane: { name: "หยุดรออ้อย", class: "bg-cane", textClass: "text-danger", color: "#f97316", icon: "fa-wheat-awn" },
-      unknown: { name: "หยุดไม่ทราบสาเหตุ", class: "bg-unknown", textClass: "text-danger", color: "#ef4444", icon: "fa-circle-question" },
-      offline: { name: "Offline", class: "bg-offline", textClass: "text-secondary", color: "#6b7280", icon: "fa-wifi" },
-      craneClosed: { name: "ปิดเครน", class: "bg-crane", textClass: "text-dark", color: "#4b5563", icon: "fa-power-off" }
+    const STATUS_COLORS = {
+      "ปกติ": "#16a34a",
+      "หยุดรอรถ": "#eab308",
+      "หยุดรออ้อย": "#f97316",
+      "หยุดไม่ทราบสาเหตุ": "#e11d48",
+      "offline": "#64748b",
+      "ปิดเครน": "#9333ea"
     };
 
-    // Application Global State
-    let appData = [];
-    let activeTab = 'dashboard';
-    let currentPage = 1;
-    let pageSize = 25;
-    let pendingDuplicateRecord = null;
-    let activeImageModal = { recordId: null, imageType: null };
+    const THAI_MONTHS = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
 
-    // Chart instances
-    let chartPieInstance = null;
-    let chartLineInstance = null;
-    let chartBarInstance = null;
+    let webAppUrl = localStorage.getItem("CRANE_WEB_APP_URL") || "https://script.google.com/macros/s/AKfycbyEniSWa0sEuYQFMtS6W_tn1OrbDRwNly6hIZqjEqTK-UTKmFwyF0pA_BqOrXItDZae/exec";
+    let selectedStatuses = [];
 
-    // Form Temporary Base64 Storage
-    let formScaleBase64 = "";
-    let formCraneBase64 = "";
+    let mockData = [
+      {
+        ID: "CRN-202609210900-101",
+        วันที่: "21 กันยายน 2569",
+        วันที่ISO: "2026-09-21",
+        สถานีขนถ่าย: "เครนขามสะแกแสง1",
+        ช่วงเวลา: "08:00 - 09:00 น.",
+        สถานการณ์: "ปกติ",
+        รูปตาชั่ง: "https://placehold.co/400x300/e2e8f0/475569?text=Scale+Photo",
+        รูปเครน: "https://placehold.co/400x300/e2e8f0/475569?text=Crane+Photo",
+        วันที่บันทึกข้อมูล: "2026-09-21 08:30:12",
+        เวลาแก้ไขล่าสุด: "2026-09-21 08:30:12"
+      }
+    ];
 
-    // Mock Backend Runner for Standalone / Preview Environment Mode
-    function generateSampleRecords() {
-      const sampleList = [];
+    let recordsData = [...mockData];
+    let barChartInstance = null;
+    let lineChartInstance = null;
+    let pendingDeleteId = null;
+    let confirmCallback = null;
+
+    window.onload = function() {
+      initStationDropdowns();
+      setDefaultDate();
+      updateConnectionStatusUI();
+      renderMetrics();
+      renderDashboard();
+      renderTable();
+      populateCodeGsBlock();
+
+      if (webAppUrl) {
+        fetchDataFromSheet();
+      }
+    };
+
+    function updateConnectionStatusUI() {
+      const statusBtn = document.getElementById("connectionStatusBtn");
+      const statusText = document.getElementById("statusText");
+
+      if (webAppUrl) {
+        statusText.textContent = "เชื่อมต่อ Web App แล้ว";
+        statusBtn.className = "px-3 py-1.5 rounded-full text-xs font-medium flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition";
+      } else {
+        statusText.textContent = "ยังไม่ได้เชื่อมต่อ Web App";
+        statusBtn.className = "px-3 py-1.5 rounded-full text-xs font-medium flex items-center space-x-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition";
+      }
+    }
+
+    function initStationDropdowns() {
+      const stationSelect = document.getElementById("stationSelect");
+      const dashStationFilter = document.getElementById("dashStationFilter");
+      
+      stationSelect.innerHTML = '<option value="" disabled selected>-- เลือกสถานีขนถ่าย (43 สถานี) --</option>';
+      dashStationFilter.innerHTML = '<option value="ALL">-- ทุกสถานีขนถ่าย --</option>';
+
+      STATIONS.forEach(st => {
+        const opt1 = document.createElement("option");
+        opt1.value = st;
+        opt1.textContent = st;
+        stationSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = st;
+        opt2.textContent = st;
+        dashStationFilter.appendChild(opt2);
+      });
+    }
+
+    function setDefaultDate() {
       const today = new Date().toISOString().split('T')[0];
-      const statuses = Object.keys(STATUS_MAP);
-
-      for (let i = 0; i < 35; i++) {
-        const randomStation = CONFIG_STATIONS[Math.floor(Math.random() * CONFIG_STATIONS.length)];
-        const randomTime = CONFIG_TIME_SLOTS[Math.floor(Math.random() * CONFIG_TIME_SLOTS.length)];
-        
-        // Pick 1 or 2 statuses
-        const numStatuses = Math.random() > 0.8 ? 2 : 1;
-        const selectedStatuses = {};
-        if (numStatuses === 1) {
-          const st = statuses[Math.floor(Math.random() * statuses.length)];
-          selectedStatuses[st] = true;
-        } else {
-          selectedStatuses['waitingTruck'] = true;
-          selectedStatuses['waitingCane'] = true;
-        }
-
-        sampleList.push({
-          id: 'rec_' + (1000 + i),
-          dateIso: today,
-          dateStr: formatIsoToThaiDate(today),
-          station: randomStation,
-          timeSlot: randomTime,
-          status: selectedStatuses,
-          scaleImgUrl: (i % 3 === 0) ? 'https://picsum.photos/400/300?random=' + (i * 2) : '',
-          craneImgUrl: (i % 2 === 0) ? 'https://picsum.photos/400/300?random=' + (i * 2 + 1) : '',
-          createdAt: new Date().toISOString()
-        });
-      }
-      return sampleList;
+      document.getElementById("dateInput").value = today;
+      updateThaiDateDisplay();
     }
 
-    const sampleMockRecords = generateSampleRecords();
+    function formatThaiDate(isoDate) {
+      if (!isoDate) return "-";
+      const [year, month, day] = isoDate.split("-");
+      if (!year || !month || !day) return isoDate;
+      const thaiYear = parseInt(year, 10) + 543;
+      const monthName = THAI_MONTHS[parseInt(month, 10) - 1] || "";
+      return `${parseInt(day, 10)} ${monthName} ${thaiYear}`;
+    }
 
-    // Check Google Apps Script Environment Fallback
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
-      window.google = window.google || {};
-      window.google.script = window.google.script || {};
+    function updateThaiDateDisplay() {
+      const isoDate = document.getElementById("dateInput").value;
+      document.getElementById("thaiDateDisplay").textContent = formatThaiDate(isoDate);
+    }
 
-      window.google.script.run = {
-        withSuccessHandler: function(callback) {
-          this._success = callback;
-          return this;
-        },
-        withFailureHandler: function(callback) {
-          this._failure = callback;
-          return this;
-        },
-        getDashboardData: function() {
-          setTimeout(() => {
-            if (this._success) this._success({
-              success: true,
-              records: sampleMockRecords,
-              config: {
-                stations: CONFIG_STATIONS,
-                timeSlots: CONFIG_TIME_SLOTS,
-                productionYear: "2569-70"
-              }
-            });
-          }, 300);
-        },
-        saveRecord: function(payload) {
-          setTimeout(() => {
-            const newRecord = {
-              id: 'rec_' + Date.now(),
-              dateStr: payload.dateStr,
-              dateIso: payload.dateIso,
-              timeSlot: payload.timeSlot,
-              station: payload.station,
-              status: payload.status,
-              scaleImgUrl: payload.scaleImgBase64 || '',
-              craneImgUrl: payload.craneImgBase64 || '',
-              createdAt: new Date().toISOString()
-            };
-            sampleMockRecords.unshift(newRecord);
-            if (this._success) this._success({ success: true, message: "บันทึกข้อมูลสำเร็จ (โหมดจำลอง)" });
-          }, 400);
-        },
-        updateRecord: function(payload) {
-          setTimeout(() => {
-            const idx = sampleMockRecords.findIndex(r => r.id === payload.id);
-            if (idx !== -1) {
-              sampleMockRecords[idx].dateStr = payload.dateStr;
-              sampleMockRecords[idx].dateIso = payload.dateIso;
-              sampleMockRecords[idx].station = payload.station;
-              sampleMockRecords[idx].timeSlot = payload.timeSlot;
-              sampleMockRecords[idx].status = payload.status;
-              if (payload.scaleImgBase64) sampleMockRecords[idx].scaleImgUrl = payload.scaleImgBase64;
-              if (payload.craneImgBase64) sampleMockRecords[idx].craneImgUrl = payload.craneImgBase64;
+    // Client-side image compression
+    function compressAndPreviewImage(input, previewId) {
+      const file = input.files[0];
+      if (!file) return;
+
+      showToast("กำลังบีบอัดรูปถ่ายให้อัตโนมัติ...", "info");
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round(height * (MAX_WIDTH / width));
+              width = MAX_WIDTH;
             }
-            if (this._success) this._success({ success: true, message: "แก้ไขข้อมูลสำเร็จ (โหมดจำลอง)" });
-          }, 400);
-        },
-        deleteRecord: function(id) {
-          setTimeout(() => {
-            const idx = sampleMockRecords.findIndex(r => r.id === id);
-            if (idx !== -1) sampleMockRecords.splice(idx, 1);
-            if (this._success) this._success({ success: true, message: "ลบข้อมูลเรียบร้อยแล้ว" });
-          }, 300);
-        },
-        deleteImage: function(id, type) {
-          setTimeout(() => {
-            const rec = sampleMockRecords.find(r => r.id === id);
-            if (rec) {
-              if (type === 'scale') rec.scaleImgUrl = '';
-              else rec.craneImgUrl = '';
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round(width * (MAX_HEIGHT / height));
+              height = MAX_HEIGHT;
             }
-            if (this._success) this._success({ success: true, message: "ลบรูปภาพเรียบร้อยแล้ว" });
-          }, 300);
-        },
-        replaceImage: function(id, type, base64) {
-          setTimeout(() => {
-            const rec = sampleMockRecords.find(r => r.id === id);
-            if (rec) {
-              if (type === 'scale') rec.scaleImgUrl = base64;
-              else rec.craneImgUrl = base64;
-            }
-            if (this._success) this._success({ success: true, message: "อัปเดตรูปภาพเรียบร้อยแล้ว" });
-          }, 300);
-        }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
+
+          const preview = document.getElementById(previewId);
+          const container = document.getElementById(previewId + 'Container');
+          const base64Input = document.getElementById(previewId === 'scalePreview' ? 'scaleImageBase64' : 'craneImageBase64');
+
+          preview.src = compressedBase64;
+          preview.classList.remove('hidden');
+          if (container) container.classList.add('hidden');
+          base64Input.value = compressedBase64;
+
+          showToast("บีบอัดรูปพร้อมบันทึกแล้ว");
+        };
+        img.src = e.target.result;
       };
-    }
-
-    // Document ready initialization
-    document.addEventListener('DOMContentLoaded', () => {
-      initDropdowns();
-      setDefaultFormDate();
-      loadAllData();
-    });
-
-    function initDropdowns() {
-      // Station Dropdowns
-      const stationSelects = ['dashFilterStation', 'formStation', 'tblFilterStation'];
-      stationSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const currentVal = el.value;
-        // Keep first option
-        const firstOpt = el.options[0];
-        el.innerHTML = '';
-        el.appendChild(firstOpt);
-
-        CONFIG_STATIONS.forEach(st => {
-          const opt = document.createElement('option');
-          opt.value = st;
-          opt.textContent = st;
-          el.appendChild(opt);
-        });
-        el.value = currentVal;
-      });
-
-      // Time Slot Dropdowns
-      const timeSelects = ['dashFilterTime', 'formTimeSlot', 'tblFilterTime'];
-      timeSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const currentVal = el.value;
-        const firstOpt = el.options[0];
-        el.innerHTML = '';
-        el.appendChild(firstOpt);
-
-        CONFIG_TIME_SLOTS.forEach(ts => {
-          const opt = document.createElement('option');
-          opt.value = ts;
-          opt.textContent = ts;
-          el.appendChild(opt);
-        });
-        el.value = currentVal;
-      });
-    }
-
-    function switchTab(tabName) {
-      activeTab = tabName;
-      document.getElementById('pageDashboard').classList.toggle('d-none', tabName !== 'dashboard');
-      document.getElementById('pageRecord').classList.toggle('d-none', tabName !== 'record');
-      document.getElementById('pageTable').classList.toggle('d-none', tabName !== 'table');
-
-      document.getElementById('navDash').classList.toggle('active', tabName === 'dashboard');
-      document.getElementById('navRecord').classList.toggle('active', tabName === 'record');
-      document.getElementById('navTable').classList.toggle('active', tabName === 'table');
-
-      if (tabName === 'dashboard') {
-        renderDashboard();
-      } else if (tabName === 'table') {
-        filterAndRenderTable();
-      }
-    }
-
-    function showLoading(msg = 'กำลังโหลดข้อมูล...') {
-      document.getElementById('loadingText').textContent = msg;
-      document.getElementById('loadingOverlay').classList.remove('d-none');
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.add('d-none');
+      reader.readAsDataURL(file);
     }
 
     function showToast(message, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      const toastEl = document.createElement('div');
-      toastEl.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
-      toastEl.setAttribute('role', 'alert');
-      toastEl.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-      `;
-      container.appendChild(toastEl);
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      const isError = type === 'error';
+      const isInfo = type === 'info';
+
+      let bgClass = 'bg-slate-900 text-white border-slate-700';
+      let iconClass = 'fa-circle-check text-emerald-400';
+
+      if (isError) {
+        bgClass = 'bg-rose-900 text-rose-100 border-rose-700';
+        iconClass = 'fa-circle-xmark text-rose-400';
+      } else if (isInfo) {
+        bgClass = 'bg-brand-900 text-brand-100 border-brand-700';
+        iconClass = 'fa-spinner animate-spin text-brand-400';
+      }
+
+      toast.className = `p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${bgClass}`;
+      toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
+      
+      container.appendChild(toast);
+
       setTimeout(() => {
-        toastEl.remove();
-      }, 4000);
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 300);
+      }, 3500);
     }
 
-    function loadAllData() {
-      showLoading('กำลังโหลดข้อมูลระบบ...');
-      google.script.run
-        .withSuccessHandler(response => {
-          hideLoading();
-          if (response && response.success) {
-            appData = response.records || [];
-            if (activeTab === 'dashboard') renderDashboard();
-            else if (activeTab === 'table') filterAndRenderTable();
-          } else {
-            showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
+    function confirmDeletePrompt(id, callback) {
+      pendingDeleteId = id;
+      confirmCallback = callback;
+      document.getElementById("confirmModalText").textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบรายการ ID: ${id}? การดำเนินการนี้จะลบข้อมูลออกจาก Google Sheet ด้วย`;
+      document.getElementById("confirmModal").classList.remove("hidden");
+    }
+
+    function closeConfirmModal(result) {
+      document.getElementById("confirmModal").classList.add("hidden");
+      if (result && confirmCallback && pendingDeleteId) {
+        confirmCallback(pendingDeleteId);
+      }
+      pendingDeleteId = null;
+      confirmCallback = null;
+    }
+
+    function openImageModal(src, title) {
+      document.getElementById("modalImage").src = src;
+      document.getElementById("modalImageTitle").textContent = title || "รูปภาพแนบ";
+      document.getElementById("imageModal").classList.remove("hidden");
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").classList.add("hidden");
+    }
+
+    function openConfigModal() {
+      document.getElementById("webAppUrlInput").value = webAppUrl;
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function saveConfigUrl() {
+      const url = document.getElementById("webAppUrlInput").value.trim();
+      webAppUrl = url;
+      localStorage.setItem("CRANE_WEB_APP_URL", webAppUrl);
+      
+      updateConnectionStatusUI();
+
+      if (webAppUrl) {
+        showToast("บันทึกการเชื่อมต่อ Web App เรียบร้อยแล้ว");
+        fetchDataFromSheet();
+      } else {
+        showToast("สลับเป็นโหมดจำลองพรีวิว (Demo)");
+      }
+      closeConfigModal();
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['record', 'dashboard', 'history', 'guide'];
+      tabs.forEach(t => {
+        const sec = document.getElementById(`sec-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tabName) {
+          if (sec) sec.classList.remove("hidden");
+          if (btn) {
+            btn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition bg-brand-600 text-white shadow-sm";
           }
-        })
-        .withFailureHandler(err => {
-          hideLoading();
-          showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + err.message, 'error');
-        })
-        .getDashboardData();
-    }
+        } else {
+          if (sec) sec.classList.add("hidden");
+          if (btn) {
+            btn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition text-slate-600 hover:bg-slate-100";
+          }
+        }
+      });
 
-    // Helper Date Formatters
-    function formatIsoToThaiDate(isoStr) {
-      if (!isoStr) return '-';
-      const parts = isoStr.split('-');
-      if (parts.length !== 3) return isoStr;
-      const year = parseInt(parts[0], 10) + 543;
-      const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-      const month = monthNames[parseInt(parts[1], 10) - 1];
-      const day = parseInt(parts[2], 10);
-      return `${day} ${month} ${year}`;
-    }
-
-    function setDefaultFormDate() {
-      const todayIso = new Date().toISOString().split('T')[0];
-      const dateInput = document.getElementById('formDateIso');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = todayIso;
-        handleDateChange();
-      }
-      const dashDateInput = document.getElementById('dashFilterDate');
-      if (dashDateInput && !dashDateInput.value) {
-        dashDateInput.value = todayIso;
+      if (tabName === 'dashboard') {
+        renderDashboard();
       }
     }
 
-    function handleDateChange() {
-      const val = document.getElementById('formDateIso').value;
-      document.getElementById('formThaiDateShow').textContent = formatIsoToThaiDate(val);
+    // ดึงข้อมูลจาก Google Sheet โดยรองรับทั้ง GET และ POST
+    function fetchDataFromSheet() {
+      if (!webAppUrl) {
+        renderTable(recordsData);
+        renderDashboard();
+        return;
+      }
+
+      showToast("กำลังดึงข้อมูลล่าสุดจาก Google Sheet...", "info");
+      
+      const fetchUrl = webAppUrl + (webAppUrl.includes('?') ? '&' : '?') + 'action=get_data&t=' + new Date().getTime();
+
+      fetch(fetchUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          recordsData = data.data;
+          renderTable();
+          renderDashboard();
+          showToast(`ดึงข้อมูลล่าสุดจาก Google Sheet เรียบร้อยแล้ว (${recordsData.length} รายการ)`);
+        } else {
+          fetchViaPostFallback();
+        }
+      })
+      .catch(err => {
+        console.warn("GET fetch failed, trying POST fallback...", err);
+        fetchViaPostFallback();
+      });
+    }
+
+    function fetchViaPostFallback() {
+      fetch(webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'get_data' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          recordsData = data.data;
+          renderTable();
+          renderDashboard();
+          showToast(`ดึงข้อมูลสำเร็จ (${recordsData.length} รายการ)`);
+        } else {
+          showToast("ดึงข้อมูลไม่สำเร็จ: " + (data.message || "เกิดข้อผิดพลาดในการดึงข้อมูล"), "error");
+        }
+      })
+      .catch(err => {
+        showToast("ไม่สามารถเชื่อมต่อ Google Apps Script ได้: " + err.message, "error");
+      });
+    }
+
+    function toggleStatus(status) {
+      const idx = selectedStatuses.indexOf(status);
+      if (idx > -1) {
+        selectedStatuses.splice(idx, 1);
+      } else {
+        selectedStatuses.push(status);
+      }
+      document.getElementById("statusInput").value = selectedStatuses.join(", ");
+      updateStatusButtonsUI();
+    }
+
+    function updateStatusButtonsUI() {
+      const buttons = document.querySelectorAll("#statusGrid .status-btn");
+      buttons.forEach(btn => {
+        const st = btn.getAttribute("data-status");
+        if (selectedStatuses.includes(st)) {
+          btn.className = `status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 shadow-md ring-2 ring-brand-500 status-badge-${st}`;
+        } else {
+          btn.className = `status-btn p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-2 hover:shadow-md bg-white border-slate-200 opacity-60`;
+        }
+      });
+    }
+
+    function resetForm() {
+      const form = document.getElementById("recordForm");
+      if (form) form.reset();
+
+      const recordId = document.getElementById("recordId");
+      if (recordId) recordId.value = "";
+
+      const statusInput = document.getElementById("statusInput");
+      if (statusInput) statusInput.value = "";
+
+      selectedStatuses = [];
+      updateStatusButtonsUI();
+
+      const scaleImg = document.getElementById("scaleImageBase64");
+      if (scaleImg) scaleImg.value = "";
+
+      const craneImg = document.getElementById("craneImageBase64");
+      if (craneImg) craneImg.value = "";
+
+      const scalePreview = document.getElementById("scalePreview");
+      if (scalePreview) scalePreview.classList.add("hidden");
+
+      const scaleContainer = document.getElementById("scalePreviewContainer");
+      if (scaleContainer) scaleContainer.classList.remove("hidden");
+
+      const cranePreview = document.getElementById("cranePreview");
+      if (cranePreview) cranePreview.classList.add("hidden");
+
+      const craneContainer = document.getElementById("cranePreviewContainer");
+      if (craneContainer) craneContainer.classList.remove("hidden");
+
+      setDefaultDate();
+
+      const formTitle = document.getElementById("formTitle");
+      if (formTitle) formTitle.textContent = "แบบฟอร์มบันทึกสถานการณ์เครน";
+
+      const submitBtnText = document.getElementById("submitBtnText");
+      if (submitBtnText) submitBtnText.textContent = "บันทึกข้อมูลลง Google Sheet";
+
+      const cancelEditBtn = document.getElementById("cancelEditBtn");
+      if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      if (!webAppUrl) {
+        openConfigModal();
+        showToast("กรุณากรอก Web App URL เพื่อเปิดใช้งานการบันทึกข้อมูล", "error");
+        return;
+      }
+
+      const station = document.getElementById("stationSelect").value;
+      const isoDate = document.getElementById("dateInput").value;
+      const timeSlot = document.getElementById("timeSlotSelect").value;
+      const status = document.getElementById("statusInput").value;
+      const scaleImg = document.getElementById("scaleImageBase64").value;
+      const craneImg = document.getElementById("craneImageBase64").value;
+      const existingId = document.getElementById("recordId").value;
+
+      if (selectedStatuses.length === 0) {
+        showToast("กรุณาเลือกสถานการณ์อย่างน้อย 1 รายการก่อนบันทึกข้อมูล", "error");
+        return;
+      }
+
+      const thaiDate = formatThaiDate(isoDate);
+      const payload = {
+        ID: existingId,
+        วันที่: thaiDate,
+        วันที่ISO: isoDate,
+        สถานีขนถ่าย: station,
+        ช่วงเวลา: timeSlot,
+        สถานการณ์: status,
+        รูปตาชั่ง: scaleImg,
+        รูปเครน: craneImg
+      };
+
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span id="submitBtnText">กำลังบันทึกลง Google Sheet & Drive...</span>`;
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_record', payload: payload })
+      })
+      .then(res => res.json())
+      .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span id="submitBtnText">บันทึกข้อมูลลง Google Sheet</span>`;
+        
+        if (data.success) {
+          showToast(data.message || "บันทึกสำเร็จ!");
+          resetForm();
+          fetchDataFromSheet();
+        } else {
+          showToast("บันทึกไม่สำเร็จ: " + data.message, "error");
+        }
+      })
+      .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span id="submitBtnText">บันทึกข้อมูลลง Google Sheet</span>`;
+        showToast("เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message, "error");
+      });
+    }
+
+    function renderMetrics() {
+      const container = document.getElementById("metricsContainer");
+      container.innerHTML = "";
+
+      const filtered = getFilteredDashboardData();
+
+      STATUSES.forEach(st => {
+        const count = filtered.filter(r => r.สถานการณ์ && r.สถานการณ์.includes(st)).length;
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-1";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500">${st}</span>
+            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${STATUS_COLORS[st]}"></span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900">${count}</div>
+          <p class="text-[10px] text-slate-400">รายการ</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function getFilteredDashboardData() {
+      const station = document.getElementById("dashStationFilter").value;
+      const timeMode = document.getElementById("dashTimeMode").value;
+
+      return recordsData.filter(r => {
+        if (station !== "ALL" && r.สถานีขนถ่าย !== station) return false;
+
+        if (timeMode === "today") {
+          const todayIso = new Date().toISOString().split('T')[0];
+          if (r.วันที่ISO !== todayIso) return false;
+        } else if (timeMode === "month") {
+          const selectedMonth = document.getElementById("dashMonthPicker").value;
+          if (selectedMonth && (!r.วันที่ISO || !String(r.วันที่ISO).startsWith(selectedMonth))) return false;
+        } else if (timeMode === "year") {
+          const selectedYear = document.getElementById("dashYearPicker").value;
+          if (selectedYear && (!r.วันที่ISO || !String(r.วันที่ISO).startsWith(selectedYear))) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function toggleDashTimeInputs() {
+      const mode = document.getElementById("dashTimeMode").value;
+      document.getElementById("dashMonthPicker").classList.toggle("hidden", mode !== "month");
+      document.getElementById("dashYearPicker").classList.toggle("hidden", mode !== "year");
+      renderDashboard();
     }
 
     function renderDashboard() {
-      const summaryType = document.getElementById('dashSummaryType').value;
-      const filterDate = document.getElementById('dashFilterDate').value;
-      const filterTime = document.getElementById('dashFilterTime').value;
-      const filterStation = document.getElementById('dashFilterStation').value;
-      const filterStatus = document.getElementById('dashFilterStatus').value;
+      renderMetrics();
+      const filtered = getFilteredDashboardData();
 
-      // Filter Data
-      let filtered = appData.filter(r => {
-        if (filterDate && r.dateIso !== filterDate) return false;
-        if (filterTime && r.timeSlot !== filterTime) return false;
-        if (filterStation && r.station !== filterStation) return false;
-        if (filterStatus && (!r.status || !r.status[filterStatus])) return false;
-        return true;
-      });
+      const counts = STATUSES.map(st => filtered.filter(r => r.สถานการณ์ && r.สถานการณ์.includes(st)).length);
 
-      // Calculate KPI Statistics
-      let totalRecords = filtered.length;
-      let countNormal = 0;
-      let countTruck = 0;
-      let countCane = 0;
-      let countUnknown = 0;
-      let countOfflineCrane = 0;
+      const barCtx = document.getElementById("barChart").getContext("2d");
+      if (barChartInstance) barChartInstance.destroy();
 
-      const countsByKey = {
-        normal: 0, waitingTruck: 0, waitingCane: 0,
-        unknown: 0, offline: 0, craneClosed: 0
-      };
-
-      filtered.forEach(r => {
-        if (!r.status) return;
-        if (r.status.normal) countNormal++;
-        if (r.status.waitingTruck) countTruck++;
-        if (r.status.waitingCane) countCane++;
-        if (r.status.unknown) countUnknown++;
-        if (r.status.offline || r.status.craneClosed) countOfflineCrane++;
-
-        Object.keys(STATUS_MAP).forEach(k => {
-          if (r.status[k]) countsByKey[k]++;
-        });
-      });
-
-      // Update KPI HTML
-      document.getElementById('kpiTotalRecords').textContent = totalRecords.toLocaleString();
-      document.getElementById('kpiNormal').textContent = countNormal.toLocaleString();
-      document.getElementById('kpiTruck').textContent = countTruck.toLocaleString();
-      document.getElementById('kpiCane').textContent = countCane.toLocaleString();
-      document.getElementById('kpiUnknown').textContent = countUnknown.toLocaleString();
-      document.getElementById('kpiOfflineCrane').textContent = countOfflineCrane.toLocaleString();
-
-      // Render Charts
-      renderPieChart(countsByKey);
-      renderLineChart(filtered);
-      renderBarChart(filtered);
-
-      // Render Summary Table
-      renderDashboardTable(filtered, summaryType);
-    }
-
-    function renderPieChart(countsByKey) {
-      const ctx = document.getElementById('chartPie').getContext('2d');
-      if (chartPieInstance) chartPieInstance.destroy();
-
-      const labels = Object.keys(STATUS_MAP).map(k => STATUS_MAP[k].name);
-      const data = Object.keys(STATUS_MAP).map(k => countsByKey[k]);
-      const colors = Object.keys(STATUS_MAP).map(k => STATUS_MAP[k].color);
-
-      chartPieInstance = new Chart(ctx, {
-        type: 'doughnut',
+      barChartInstance = new Chart(barCtx, {
+        type: 'bar',
         data: {
-          labels: labels,
+          labels: STATUSES,
           datasets: [{
-            data: data,
-            backgroundColor: colors,
+            label: 'จำนวนครั้ง',
+            data: counts,
+            backgroundColor: STATUSES.map(st => STATUS_COLORS[st]),
+            borderRadius: 8,
             borderWidth: 1
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 } } }
-          }
-        }
-      });
-    }
-
-    function renderLineChart(records) {
-      const ctx = document.getElementById('chartLine').getContext('2d');
-      if (chartLineInstance) chartLineInstance.destroy();
-
-      const timeLabels = CONFIG_TIME_SLOTS;
-      const normalTrend = new Array(timeLabels.length).fill(0);
-      const issueTrend = new Array(timeLabels.length).fill(0);
-
-      records.forEach(r => {
-        const idx = timeLabels.indexOf(r.timeSlot);
-        if (idx !== -1 && r.status) {
-          if (r.status.normal) normalTrend[idx]++;
-          if (r.status.waitingTruck || r.status.waitingCane || r.status.unknown) issueTrend[idx]++;
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
         }
       });
 
-      chartLineInstance = new Chart(ctx, {
+      const dateMap = {};
+      filtered.forEach(r => {
+        const d = r.วันที่ISO || "ไม่ระบุ";
+        if (!dateMap[d]) dateMap[d] = 0;
+        dateMap[d]++;
+      });
+
+      const sortedDates = Object.keys(dateMap).sort();
+      const dateCounts = sortedDates.map(d => dateMap[d]);
+
+      const lineCtx = document.getElementById("lineChart").getContext("2d");
+      if (lineChartInstance) lineChartInstance.destroy();
+
+      lineChartInstance = new Chart(lineCtx, {
         type: 'line',
         data: {
-          labels: timeLabels.map(t => t.replace(' น.', '')),
-          datasets: [
-            {
-              label: 'ปกติ',
-              data: normalTrend,
-              borderColor: STATUS_MAP.normal.color,
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              fill: true,
-              tension: 0.3
-            },
-            {
-              label: 'หยุด/มีปัญหา',
-              data: issueTrend,
-              borderColor: STATUS_MAP.waitingTruck.color,
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              fill: true,
-              tension: 0.3
-            }
-          ]
+          labels: sortedDates.length > 0 ? sortedDates : ['ไม่มีข้อมูล'],
+          datasets: [{
+            label: 'จำนวนบันทึกรวม',
+            data: dateCounts.length > 0 ? dateCounts : [0],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { font: { family: 'Sarabun' } } }
-          },
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
         }
       });
     }
 
-    function renderBarChart(records) {
-      const ctx = document.getElementById('chartBar').getContext('2d');
-      if (chartBarInstance) chartBarInstance.destroy();
+    function renderTable(data = recordsData) {
+      const tbody = document.getElementById("tableBody");
+      document.getElementById("recordBadge").textContent = data.length;
+      tbody.innerHTML = "";
 
-      // Top stations with records
-      const stationMap = {};
-      CONFIG_STATIONS.forEach(st => {
-        stationMap[st] = { normal: 0, truck: 0, cane: 0, unknown: 0 };
-      });
-
-      records.forEach(r => {
-        if (stationMap[r.station] && r.status) {
-          if (r.status.normal) stationMap[r.station].normal++;
-          if (r.status.waitingTruck) stationMap[r.station].truck++;
-          if (r.status.waitingCane) stationMap[r.station].cane++;
-          if (r.status.unknown) stationMap[r.station].unknown++;
-        }
-      });
-
-      // Show top 15 stations or all if less
-      const stations = CONFIG_STATIONS.slice(0, 15);
-
-      chartBarInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: stations.map(s => s.replace('เครน', '')),
-          datasets: [
-            { label: 'ปกติ', data: stations.map(s => stationMap[s].normal), backgroundColor: STATUS_MAP.normal.color },
-            { label: 'หยุดรอรถ', data: stations.map(s => stationMap[s].truck), backgroundColor: STATUS_MAP.waitingTruck.color },
-            { label: 'หยุดรออ้อย', data: stations.map(s => stationMap[s].cane), backgroundColor: STATUS_MAP.waitingCane.color },
-            { label: 'ไม่ทราบสาเหตุ', data: stations.map(s => stationMap[s].unknown), backgroundColor: STATUS_MAP.unknown.color }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { font: { family: 'Sarabun' } } }
-          },
-          scales: {
-            x: { stacked: true },
-            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      });
-    }
-
-    function renderDashboardTable(records, type) {
-      const tbody = document.getElementById('dashTableBody');
-      const theadTr = document.getElementById('dashTableHeader');
-      tbody.innerHTML = '';
-
-      let groupingKey = 'station';
-      if (type === 'hourly') groupingKey = 'timeSlot';
-      if (type === 'daily') groupingKey = 'dateStr';
-
-      theadTr.cells[0].textContent = type === 'hourly' ? 'ช่วงเวลา' : (type === 'daily' ? 'วันที่' : 'สถานีขนถ่าย');
-
-      const groups = {};
-      records.forEach(r => {
-        const key = r[groupingKey] || 'ไม่ระบุ';
-        if (!groups[key]) {
-          groups[key] = { normal: 0, waitingTruck: 0, waitingCane: 0, unknown: 0, offline: 0, craneClosed: 0, total: 0 };
-        }
-        groups[key].total++;
-        if (r.status) {
-          Object.keys(STATUS_MAP).forEach(stKey => {
-            if (r.status[stKey]) groups[key][stKey]++;
-          });
-        }
-      });
-
-      const keys = Object.keys(groups);
-      if (keys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>';
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-8 text-slate-400">
+              <i class="fa-solid fa-inbox text-3xl mb-2 block"></i>
+              ไม่พบข้อมูลบันทึกในระบบ
+            </td>
+          </tr>
+        `;
         return;
       }
 
-      keys.forEach(key => {
-        const g = groups[key];
-        const tr = document.createElement('tr');
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50/80 transition";
+
+        const statusArray = item.สถานการณ์ ? String(item.สถานการณ์).split(',').map(s => s.trim()).filter(Boolean) : [];
+        const statusBadges = statusArray.length > 0 ? statusArray.map(st => `
+          <span class="inline-block px-2.5 py-0.5 m-0.5 rounded-full text-[11px] font-bold status-badge-${st}">
+            ${st}
+          </span>
+        `).join('') : '-';
+
+        const scaleImgTag = item.รูปตาชั่ง 
+          ? `<img src="${item.รูปตาชั่ง}" style="width: 3cm; height: 3cm;" class="object-cover rounded-xl border border-slate-200 shadow-sm hover:scale-105 hover:shadow-md transition cursor-pointer mx-auto" onclick="openImageModal('${item.รูปตาชั่ง}', 'รูปตาชั่ง - ${item.สถานีขนถ่าย}')" alt="รูปตาชั่ง" title="คลิกเพื่อดูรูปขยาย" onerror="this.onerror=null; this.src='https://placehold.co/300x300/e2e8f0/475569?text=Scale+Photo';"/>`
+          : `<div style="width: 3cm; height: 3cm;" class="bg-slate-100 rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-slate-400 mx-auto text-[10px]">ไม่มีรูป</div>`;
+
+        const craneImgTag = item.รูปเครน 
+          ? `<img src="${item.รูปเครน}" style="width: 3cm; height: 3cm;" class="object-cover rounded-xl border border-slate-200 shadow-sm hover:scale-105 hover:shadow-md transition cursor-pointer mx-auto" onclick="openImageModal('${item.รูปเครน}', 'รูปเครน - ${item.สถานีขนถ่าย}')" alt="รูปเครน" title="คลิกเพื่อดูรูปขยาย" onerror="this.onerror=null; this.src='https://placehold.co/300x300/e2e8f0/475569?text=Crane+Photo';"/>`
+          : `<div style="width: 3cm; height: 3cm;" class="bg-slate-100 rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-slate-400 mx-auto text-[10px]">ไม่มีรูป</div>`;
+
         tr.innerHTML = `
-          <td class="fw-bold">${key}</td>
-          <td class="text-center text-success">${g.normal}</td>
-          <td class="text-center text-warning">${g.waitingTruck}</td>
-          <td class="text-center" style="color:#f97316;">${g.waitingCane}</td>
-          <td class="text-center text-danger">${g.unknown}</td>
-          <td class="text-center text-secondary">${g.offline}</td>
-          <td class="text-center text-dark">${g.craneClosed}</td>
-          <td class="text-center fw-bold">${g.total}</td>
+          <td class="py-3 px-4 font-mono font-bold text-slate-700">${item.ID || '-'}</td>
+          <td class="py-3 px-4 font-medium text-slate-800">${item.วันที่ || '-'}</td>
+          <td class="py-3 px-4 font-semibold text-brand-700">${item.สถานีขนถ่าย || '-'}</td>
+          <td class="py-3 px-4 text-slate-600">${item.ช่วงเวลา || '-'}</td>
+          <td class="py-3 px-4">${statusBadges}</td>
+          <td class="py-3 px-4 text-center align-middle">${scaleImgTag}</td>
+          <td class="py-3 px-4 text-center align-middle">${craneImgTag}</td>
+          <td class="py-3 px-4 text-slate-400 text-[10px]">${item.วันที่บันทึกข้อมูล || '-'}</td>
+          <td class="py-3 px-4 text-center">
+            <div class="flex items-center justify-center space-x-2">
+              <button onclick="editRecord('${item.ID}')" class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200" title="แก้ไข">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteRecord('${item.ID}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition border border-rose-200" title="ลบ">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function handleStatusChange(changedKey) {
-      if (!ALLOW_NORMAL_WITH_OTHER_STATUS) {
-        if (changedKey === 'normal' && document.getElementById('stNormal').checked) {
-          ['stWaitingTruck', 'stWaitingCane', 'stUnknown', 'stOffline', 'stCraneClosed'].forEach(id => {
-            document.getElementById(id).checked = false;
-          });
-        } else if (changedKey !== 'normal' && document.getElementById('st' + changedKey.charAt(0).toUpperCase() + changedKey.slice(1)).checked) {
-          document.getElementById('stNormal').checked = false;
-        }
-      }
-    }
-
-    function handleFileSelect(event, type) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      if (file.size > 10 * 1024 * 1024) {
-        showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB', 'error');
-        event.target.value = '';
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64 = e.target.result;
-        if (type === 'Scale') {
-          formScaleBase64 = base64;
-          document.getElementById('previewScaleImg').src = base64;
-          document.getElementById('previewScaleImg').classList.remove('d-none');
-          document.getElementById('previewScalePlaceholder').classList.add('d-none');
-          document.getElementById('btnRemoveScale').classList.remove('d-none');
-        } else {
-          formCraneBase64 = base64;
-          document.getElementById('previewCraneImg').src = base64;
-          document.getElementById('previewCraneImg').classList.remove('d-none');
-          document.getElementById('previewCranePlaceholder').classList.add('d-none');
-          document.getElementById('btnRemoveCrane').classList.remove('d-none');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function removeImageSelection(type) {
-      if (type === 'Scale') {
-        formScaleBase64 = '';
-        document.getElementById('fileScale').value = '';
-        document.getElementById('previewScaleImg').src = '';
-        document.getElementById('previewScaleImg').classList.add('d-none');
-        document.getElementById('previewScalePlaceholder').classList.remove('d-none');
-        document.getElementById('btnRemoveScale').classList.add('d-none');
-      } else {
-        formCraneBase64 = '';
-        document.getElementById('fileCrane').value = '';
-        document.getElementById('previewCraneImg').src = '';
-        document.getElementById('previewCraneImg').classList.add('d-none');
-        document.getElementById('previewCranePlaceholder').classList.remove('d-none');
-        document.getElementById('btnRemoveCrane').classList.add('d-none');
-      }
-    }
-
-    function resetForm() {
-      document.getElementById('recordForm').reset();
-      document.getElementById('editRecordId').value = '';
-      removeImageSelection('Scale');
-      removeImageSelection('Crane');
-      setDefaultFormDate();
-    }
-
-    function handleFormSubmit(event) {
-      event.preventDefault();
-
-      const editId = document.getElementById('editRecordId').value;
-      const dateIso = document.getElementById('formDateIso').value;
-      const dateStr = formatIsoToThaiDate(dateIso);
-      const station = document.getElementById('formStation').value;
-      const timeSlot = document.getElementById('formTimeSlot').value;
-
-      const statusObj = {
-        normal: document.getElementById('stNormal').checked,
-        waitingTruck: document.getElementById('stWaitingTruck').checked,
-        waitingCane: document.getElementById('stWaitingCane').checked,
-        unknown: document.getElementById('stUnknown').checked,
-        offline: document.getElementById('stOffline').checked,
-        craneClosed: document.getElementById('stCraneClosed').checked
-      };
-
-      const hasSelectedStatus = Object.values(statusObj).some(val => val === true);
-      if (!hasSelectedStatus) {
-        showToast('กรุณาเลือกสถานการณ์อย่างน้อย 1 รายการ', 'error');
-        return;
-      }
-
-      const payload = {
-        id: editId,
-        dateIso: dateIso,
-        dateStr: dateStr,
-        station: station,
-        timeSlot: timeSlot,
-        status: statusObj,
-        scaleImgBase64: formScaleBase64,
-        craneImgBase64: formCraneBase64
-      };
-
-      // Check duplicate record if creating new
-      if (!editId) {
-        const existing = appData.find(r => r.dateIso === dateIso && r.station === station && r.timeSlot === timeSlot);
-        if (existing) {
-          pendingDuplicateRecord = { payload: payload, existingId: existing.id };
-          document.getElementById('modalDuplicateMsg').innerHTML = `พบข้อมูลบันทึกของ <b>${station}</b> ช่วงเวลา <b>${timeSlot}</b> วันที่ <b>${dateStr}</b> แล้วในระบบ`;
-          const modal = new bootstrap.Modal(document.getElementById('modalDuplicate'));
-          modal.show();
-          return;
-        }
-      }
-
-      saveOrUpdateRecord(payload);
-    }
-
-    function proceedOverwrite() {
-      if (pendingDuplicateRecord) {
-        pendingDuplicateRecord.payload.id = pendingDuplicateRecord.existingId;
-        const modalEl = document.getElementById('modalDuplicate');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-        saveOrUpdateRecord(pendingDuplicateRecord.payload);
-        pendingDuplicateRecord = null;
-      }
-    }
-
-    function saveOrUpdateRecord(payload) {
-      showLoading(payload.id ? 'กำลังอัปเดตข้อมูล...' : 'กำลังบันทึกข้อมูล...');
-      const actionMethod = payload.id ? 'updateRecord' : 'saveRecord';
-
-      google.script.run
-        .withSuccessHandler(response => {
-          hideLoading();
-          if (response && response.success) {
-            showToast(response.message || 'บันทึกสำเร็จ');
-            resetForm();
-            loadAllData();
-            switchTab('table');
-          } else {
-            showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
-          }
-        })
-        .withFailureHandler(err => {
-          hideLoading();
-          showToast('บันทึกไม่สำเร็จ: ' + err.message, 'error');
-        })[actionMethod](payload);
-    }
-
-    function filterAndRenderTable() {
-      const filterDate = document.getElementById('tblFilterDate').value;
-      const filterTime = document.getElementById('tblFilterTime').value;
-      const filterStation = document.getElementById('tblFilterStation').value;
-      const filterStatus = document.getElementById('tblFilterStatus').value;
-      const searchText = document.getElementById('tblSearchText').value.toLowerCase().trim();
-
-      let filtered = appData.filter(r => {
-        if (filterDate && r.dateIso !== filterDate) return false;
-        if (filterTime && r.timeSlot !== filterTime) return false;
-        if (filterStation && r.station !== filterStation) return false;
-        if (filterStatus && (!r.status || !r.status[filterStatus])) return false;
-        if (searchText) {
-          const matchStation = r.station && r.station.toLowerCase().includes(searchText);
-          const matchDate = r.dateStr && r.dateStr.toLowerCase().includes(searchText);
-          const matchTime = r.timeSlot && r.timeSlot.toLowerCase().includes(searchText);
-          if (!matchStation && !matchDate && !matchTime) return false;
-        }
-        return true;
-      });
-
-      const totalItems = filtered.length;
-      const totalPages = Math.ceil(totalItems / pageSize) || 1;
-      if (currentPage > totalPages) currentPage = totalPages;
-
-      const startIndex = (currentPage - 1) * pageSize;
-      const pagedData = filtered.slice(startIndex, startIndex + pageSize);
-
-      const tbody = document.getElementById('tblBody');
-      tbody.innerHTML = '';
-
-      if (pagedData.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7">
-              <div class="empty-state">
-                <i class="fa-solid fa-folder-open"></i>
-                <h5>ไม่พบข้อมูล</h5>
-                <p class="small text-muted">ลองเปลี่ยนเงื่อนไขการค้นหา หรือเพิ่มบันทึกรายการใหม่</p>
-              </div>
-            </td>
-          </tr>
-        `;
-      } else {
-        pagedData.forEach(r => {
-          const tr = document.createElement('tr');
-          
-          // Format Badges for statuses
-          let statusBadgesHtml = '';
-          if (r.status) {
-            Object.keys(STATUS_MAP).forEach(stKey => {
-              if (r.status[stKey]) {
-                const conf = STATUS_MAP[stKey];
-                statusBadgesHtml += `<span class="badge ${conf.class} badge-status"><i class="fa-solid ${conf.icon} me-1"></i>${conf.name}</span>`;
-              }
-            });
-          }
-
-          // Thumbnail images
-          const scaleImgHtml = r.scaleImgUrl ? `<img src="${r.scaleImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'scale')" title="คลิกดูรูปตาชั่ง">` : '<span class="text-muted small">-</span>';
-          const craneImgHtml = r.craneImgUrl ? `<img src="${r.craneImgUrl}" class="thumb-img" onclick="openImageViewer('${r.id}', 'crane')" title="คลิกดูรูปเครน">` : '<span class="text-muted small">-</span>';
-
-          tr.innerHTML = `
-            <td class="small fw-bold">${r.dateStr || r.dateIso}</td>
-            <td class="fw-bold text-success">${r.station}</td>
-            <td class="small">${r.timeSlot}</td>
-            <td>${statusBadgesHtml || '-'}</td>
-            <td class="text-center">${scaleImgHtml}</td>
-            <td class="text-center">${craneImgHtml}</td>
-            <td class="text-center">
-              <button class="btn btn-sm btn-outline-warning me-1" onclick="editRecord('${r.id}')" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteRecordConfirm('${r.id}')" title="ลบ"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-
-      // Pagination & Info
-      document.getElementById('tblInfo').textContent = `แสดง ${totalItems > 0 ? startIndex + 1 : 0} ถึง ${Math.min(startIndex + pageSize, totalItems)} จาก ${totalItems} รายการ`;
-      renderPagination(totalPages);
-    }
-
-    function renderPagination(totalPages) {
-      const container = document.getElementById('tblPagination');
-      container.innerHTML = '';
-
-      if (totalPages <= 1) return;
-
-      // Prev Button
-      const prevLi = document.createElement('li');
-      prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-      prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">&laquo;</a>`;
-      container.appendChild(prevLi);
-
-      // Page numbers
-      for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-          const li = document.createElement('li');
-          li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-          li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>`;
-          container.appendChild(li);
-        }
-      }
-
-      // Next Button
-      const nextLi = document.createElement('li');
-      nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-      nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">&raquo;</a>`;
-      container.appendChild(nextLi);
-    }
-
-    function changePage(page) {
-      currentPage = page;
-      filterAndRenderTable();
-    }
-
-    function changePageSize() {
-      pageSize = parseInt(document.getElementById('tblPageSize').value, 10);
-      currentPage = 1;
-      filterAndRenderTable();
-    }
-
-    function resetTableFilters() {
-      document.getElementById('tblFilterDate').value = '';
-      document.getElementById('tblFilterTime').value = '';
-      document.getElementById('tblFilterStation').value = '';
-      document.getElementById('tblFilterStatus').value = '';
-      document.getElementById('tblSearchText').value = '';
-      currentPage = 1;
-      filterAndRenderTable();
-    }
-
-    function openImageViewer(recordId, type) {
-      const rec = appData.find(r => r.id === recordId);
-      if (!rec) return;
-
-      activeImageModal = { recordId: recordId, imageType: type };
-      const imgUrl = type === 'scale' ? rec.scaleImgUrl : rec.craneImgUrl;
-      const titleText = `รูปภาพ${type === 'scale' ? 'ตาชั่ง' : 'เครน'} - ${rec.station} (${rec.timeSlot})`;
-
-      document.getElementById('modalImgTitle').textContent = titleText;
-      document.getElementById('modalImgPreview').src = imgUrl;
-      document.getElementById('modalBtnDownload').href = imgUrl;
-
-      const modal = new bootstrap.Modal(document.getElementById('modalImageViewer'));
-      modal.show();
-    }
-
-    function executeImageDelete() {
-      if (!activeImageModal.recordId) return;
-
-      if (confirm('คุณต้องการลบรูปภาพนี้ใช่หรือไม่?')) {
-        showLoading('กำลังลบรูปภาพ...');
-        google.script.run
-          .withSuccessHandler(res => {
-            hideLoading();
-            if (res && res.success) {
-              showToast('ลบรูปภาพสำเร็จ');
-              const modalEl = document.getElementById('modalImageViewer');
-              const modal = bootstrap.Modal.getInstance(modalEl);
-              if (modal) modal.hide();
-              loadAllData();
-            } else {
-              showToast('ลบรูปภาพไม่สำเร็จ', 'error');
-            }
-          })
-          .withFailureHandler(err => {
-            hideLoading();
-            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
-          })
-          .deleteImage(activeImageModal.recordId, activeImageModal.imageType);
-      }
-    }
-
-    function handleReplaceImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file || !activeImageModal.recordId) return;
-
-      if (file.size > 10 * 1024 * 1024) {
-        showToast('ไฟล์ต้องมีขนาดไม่เกิน 10MB', 'error');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64 = e.target.result;
-        showLoading('กำลังเปลี่ยนรูปภาพ...');
-
-        google.script.run
-          .withSuccessHandler(res => {
-            hideLoading();
-            if (res && res.success) {
-              showToast('เปลี่ยนรูปภาพเรียบร้อย');
-              document.getElementById('modalImgPreview').src = base64;
-              loadAllData();
-            } else {
-              showToast('ไม่สามารถเปลี่ยนรูปภาพได้', 'error');
-            }
-          })
-          .withFailureHandler(err => {
-            hideLoading();
-            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
-          })
-          .replaceImage(activeImageModal.recordId, activeImageModal.imageType, base64);
-      };
-      reader.readAsDataURL(file);
+    function filterTableData() {
+      const q = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = recordsData.filter(r => 
+        (r.ID && String(r.ID).toLowerCase().includes(q)) ||
+        (r.สถานีขนถ่าย && String(r.สถานีขนถ่าย).toLowerCase().includes(q)) ||
+        (r.วันที่ && String(r.วันที่).toLowerCase().includes(q)) ||
+        (r.สถานการณ์ && String(r.สถานการณ์).toLowerCase().includes(q))
+      );
+      renderTable(filtered);
     }
 
     function editRecord(id) {
-      const rec = appData.find(r => r.id === id);
-      if (!rec) return;
+      const item = recordsData.find(r => r.ID === id);
+      if (!item) return;
 
       switchTab('record');
 
-      document.getElementById('editRecordId').value = rec.id;
-      document.getElementById('formDateIso').value = rec.dateIso;
-      handleDateChange();
-      document.getElementById('formStation').value = rec.station;
-      document.getElementById('formTimeSlot').value = rec.timeSlot;
+      document.getElementById("recordId").value = item.ID;
+      document.getElementById("stationSelect").value = item.สถานีขนถ่าย;
+      document.getElementById("dateInput").value = item.วันที่ISO;
+      updateThaiDateDisplay();
+      document.getElementById("timeSlotSelect").value = item.ช่วงเวลา;
 
-      // Status Checkboxes
-      if (rec.status) {
-        document.getElementById('stNormal').checked = !!rec.status.normal;
-        document.getElementById('stWaitingTruck').checked = !!rec.status.waitingTruck;
-        document.getElementById('stWaitingCane').checked = !!rec.status.waitingCane;
-        document.getElementById('stUnknown').checked = !!rec.status.unknown;
-        document.getElementById('stOffline').checked = !!rec.status.offline;
-        document.getElementById('stCraneClosed').checked = !!rec.status.craneClosed;
-      }
-
-      // Existing Images Previews
-      if (rec.scaleImgUrl) {
-        formScaleBase64 = rec.scaleImgUrl;
-        document.getElementById('previewScaleImg').src = rec.scaleImgUrl;
-        document.getElementById('previewScaleImg').classList.remove('d-none');
-        document.getElementById('previewScalePlaceholder').classList.add('d-none');
-        document.getElementById('btnRemoveScale').classList.remove('d-none');
+      if (item.สถานการณ์) {
+        selectedStatuses = String(item.สถานการณ์).split(',').map(s => s.trim()).filter(Boolean);
       } else {
-        removeImageSelection('Scale');
+        selectedStatuses = [];
+      }
+      document.getElementById("statusInput").value = selectedStatuses.join(", ");
+      updateStatusButtonsUI();
+
+      if (item.รูปตาชั่ง) {
+        document.getElementById("scalePreview").src = item.รูปตาชั่ง;
+        document.getElementById("scalePreview").classList.remove("hidden");
+        document.getElementById("scalePreviewContainer").classList.add("hidden");
+        document.getElementById("scaleImageBase64").value = item.รูปตาชั่ง;
+      }
+      if (item.รูปเครน) {
+        document.getElementById("cranePreview").src = item.รูปเครน;
+        document.getElementById("cranePreview").classList.remove("hidden");
+        document.getElementById("cranePreviewContainer").classList.add("hidden");
+        document.getElementById("craneImageBase64").value = item.รูปเครน;
       }
 
-      if (rec.craneImgUrl) {
-        formCraneBase64 = rec.craneImgUrl;
-        document.getElementById('previewCraneImg').src = rec.craneImgUrl;
-        document.getElementById('previewCraneImg').classList.remove('d-none');
-        document.getElementById('previewCranePlaceholder').classList.add('d-none');
-        document.getElementById('btnRemoveCrane').classList.remove('d-none');
-      } else {
-        removeImageSelection('Crane');
-      }
+      const formTitle = document.getElementById("formTitle");
+      if (formTitle) formTitle.textContent = "แก้ไขข้อมูลบันทึก ID: " + item.ID;
+
+      const submitBtnText = document.getElementById("submitBtnText");
+      if (submitBtnText) submitBtnText.textContent = "อัปเดตข้อมูลลง Google Sheet";
+
+      const cancelEditBtn = document.getElementById("cancelEditBtn");
+      if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
     }
 
-    function deleteRecordConfirm(id) {
-      if (confirm('คุณแน่ใจหรือว่าต้องการลบรายการบันทึกนี้?')) {
-        showLoading('กำลังลบรายการ...');
-        google.script.run
-          .withSuccessHandler(res => {
-            hideLoading();
-            if (res && res.success) {
-              showToast(res.message || 'ลบข้อมูลสำเร็จ');
-              loadAllData();
-            } else {
-              showToast('ไม่สามารถลบรายการได้', 'error');
-            }
-          })
-          .withFailureHandler(err => {
-            hideLoading();
-            showToast('เกิดข้อผิดพลาดในการลบ: ' + err.message, 'error');
-          })
-          .deleteRecord(id);
+    function deleteRecord(id) {
+      confirmDeletePrompt(id, (targetId) => {
+        if (!webAppUrl) {
+          showToast("กรุณากรอก Web App URL เพื่อทำการลบข้อมูลใน Google Sheet", "error");
+          return;
+        }
+
+        fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'delete_record', id: targetId })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            showToast(data.message);
+            fetchDataFromSheet();
+          } else {
+            showToast("ลบไม่สำเร็จ: " + data.message, "error");
+          }
+        })
+        .catch(err => {
+          showToast("เกิดข้อผิดพลาดในการลบ: " + err.message, "error");
+        });
+      });
+    }
+
+    function populateCodeGsBlock() {
+      const gsCode = `const SPREADSHEET_ID = "1-awHtb20d-i5z78u1X8eJQjG-42f65R967c3aZj8_1U";
+const SHEET_NAME = "บันทึกสถานการณ์เครน";
+
+const HEADERS = [
+  "ID", "วันที่", "วันที่ISO", "สถานีขนถ่าย", "ช่วงเวลา",
+  "สถานการณ์", "รูปตาชั่ง", "รูปเครน", "วันที่บันทึกข้อมูล", "เวลาแก้ไขล่าสุด"
+];
+
+function doGet(e) {
+  try {
+    if (e && e.parameter && e.parameter.action === "get_data") {
+      return responseJSON({ success: true, data: getData() });
+    }
+    return HtmlService.createTemplateFromFile('index')
+      .evaluate()
+      .setTitle('ระบบบันทึกสถานการณ์เครน')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch (err) {
+    if (e && e.parameter && e.parameter.action === "get_data") {
+      return responseJSON({ success: true, data: getData() });
+    }
+    return ContentService.createTextOutput("Crane Monitoring API System - Online.")
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return responseJSON({ success: false, message: "ไม่พบข้อมูลที่ส่งมาจากไคลเอนต์" });
+    }
+    const contents = JSON.parse(e.postData.contents);
+    if (contents.action === "get_data") return responseJSON({ success: true, data: getData() });
+    if (contents.action === "save_record") return responseJSON(saveRecord(contents.payload));
+    if (contents.action === "delete_record") return responseJSON(deleteRecord(contents.id));
+    return responseJSON({ success: false, message: "คำสั่งไม่ถูกต้อง" });
+  } catch (err) {
+    return responseJSON({ success: false, message: "Server Error: " + err.toString() });
+  }
+}
+
+function getData() {
+  try {
+    const sheet = getOrCreateSheet();
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length <= 1) return [];
+
+    const headers = data[0];
+    const result = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || !row[0]) continue;
+
+      const rowObj = {};
+      for (let j = 0; j < headers.length; j++) {
+        let key = headers[j];
+        let val = row[j];
+
+        if (val instanceof Date) {
+          if (key === "วันที่ISO") {
+            val = Utilities.formatDate(val, Session.getScriptTimeZone(), "yyyy-MM-dd");
+          } else {
+            val = Utilities.formatDate(val, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+          }
+        } else {
+          val = (val !== null && val !== undefined) ? String(val) : "";
+        }
+        rowObj[key] = val;
+      }
+      result.push(rowObj);
+    }
+    return result.reverse();
+  } catch (err) {
+    console.error("getData error: " + err.toString());
+    return [];
+  }
+}`;
+      document.getElementById("codeGsBlock").textContent = gsCode;
+    }
+
+    function copyCodeGs() {
+      const code = document.getElementById("codeGsBlock").textContent;
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = code;
+      tempTextArea.style.position = "fixed";
+      tempTextArea.style.top = "0";
+      tempTextArea.style.left = "0";
+      tempTextArea.style.opacity = "0";
+      document.body.appendChild(tempTextArea);
+      tempTextArea.focus();
+      tempTextArea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast("คัดลอกโค้ด Code.gs เรียบร้อยแล้ว!");
+        } else {
+          showToast("ไม่สามารถคัดลอกได้ กรุณาใช้ Ctrl+C", "error");
+        }
+      } catch (err) {
+        showToast("เกิดข้อผิดพลาดในการคัดลอก: " + err, "error");
+      } finally {
+        document.body.removeChild(tempTextArea);
       }
     }
   </script>
